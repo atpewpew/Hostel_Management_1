@@ -1,7 +1,9 @@
 const { Sequelize } = require('sequelize');
 
 // In-memory database configuration
-const sequelize = new Sequelize('sqlite::memory:', {
+const sequelize = new Sequelize({
+    dialect: 'sqlite',
+    storage: ':memory:',
     logging: false, // Disable SQL logging
     define: {
         timestamps: true, // Add createdAt and updatedAt
