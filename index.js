@@ -22,6 +22,7 @@ const hostelProblem = require('./models/problem.js');
 const Announcement = require('./models/announcement.js'); // Import Announcement model
 const { dataProblems, dataEntryExit, userData } = require('./config/data.js');
 const { MenuItems, Feedback } = require('./models/menu.js');
+const { parsePdfMenu } = require('./utils/pdfMenuParser.js');
 
 //cloudinary 
 
@@ -663,16 +664,159 @@ sequelize.sync({ force: true })
         console.error('Error syncing database:', error);
     });
 
+// Admin-only middleware
+const adminOnly = (req, res, next) => {
+    const role = req.cookies.role;
+    if (!req.cookies.jwt || role !== 'admin') {
+        return res.status(403).json({ message: "Access denied. Administrator privileges required." });
+    }
+    next();
+};
+
+// PDF Upload Storage for Mess Menu
+const pdfUploadDir = path.join(__dirname, 'public/uploads/mess-menu');
+const pdfStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, pdfUploadDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, 'latest_menu.pdf');
+    }
+});
+const uploadPdf = multer({
+    storage: pdfStorage,
+    limits: { fileSize: 15 * 1024 * 1024 }, // 15MB limit
+    fileFilter: (req, file, cb) => {
+        const isPdfExt = path.extname(file.originalname).toLowerCase() === '.pdf';
+        const isPdfMime = file.mimetype === 'application/pdf';
+        if (isPdfExt || isPdfMime) {
+            cb(null, true);
+        } else {
+            cb(new Error("Only PDF files are allowed!"));
+        }
+    }
+});
+
+// Mess Menu Routes
 app.get('/services/mess', async (req, res) => {
     try {
         const isLoggedIn = Boolean(req.cookies.jwt);
-        const menuItems = await MenuItems.findAll();
-        res.render('menu', { menuItems, query: req.query, loggedIn: isLoggedIn });
+        const role = req.cookies.role || null;
+        const menuItems = await MenuItems.findAll({ order: [['id', 'ASC']] });
+
+        let hasPdf = false;
+        try {
+            await fs.access(path.join(pdfUploadDir, 'latest_menu.pdf'));
+            hasPdf = true;
+        } catch (_) {
+            hasPdf = false;
+        }
+
+        res.render('menu', {
+            menuItems,
+            query: req.query,
+            loggedIn: isLoggedIn,
+            role,
+            hasPdf
+        });
     } catch (error) {
         console.error('Error fetching menu items:', error);
         res.status(500).send('Internal Server Error');
     }
 });
+
+// Download latest uploaded mess menu PDF
+app.get('/services/mess/download-pdf', async (req, res) => {
+    try {
+        const pdfPath = path.join(pdfUploadDir, 'latest_menu.pdf');
+        await fs.access(pdfPath);
+        res.download(pdfPath, 'Hostel_Mess_Weekly_Menu.pdf');
+    } catch (err) {
+        res.status(404).send('PDF menu not found.');
+    }
+});
+
+// Parse uploaded PDF timetable and return structured preview
+app.post('/services/mess/parse-pdf', adminOnly, (req, res) => {
+    uploadPdf.single('menuPdf')(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({ success: false, message: err.message });
+        }
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "Please select a PDF file to upload." });
+        }
+
+        try {
+            const parsed = await parsePdfMenu(req.file.path);
+            if (!parsed.items || parsed.items.length === 0) {
+                return res.status(422).json({
+                    success: false,
+                    message: "No menu items could be recognized in the uploaded PDF. Please verify that the PDF contains a readable timetable."
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                items: parsed.items,
+                summary: parsed.summary,
+                filename: req.file.filename
+            });
+        } catch (parseError) {
+            console.error("Error parsing menu PDF:", parseError);
+            return res.status(500).json({
+                success: false,
+                message: "Error analyzing PDF: " + (parseError.message || "Unknown error")
+            });
+        }
+    });
+});
+
+// Persist confirmed menu to database and menuData.json
+app.post('/services/mess/update-menu', adminOnly, async (req, res) => {
+    try {
+        const { items } = req.body;
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ success: false, message: "Menu items array is required and cannot be empty." });
+        }
+
+        // Validate and clean each item
+        const formattedItems = items.map(item => ({
+            day: item.day,
+            mealType: item.mealType,
+            name: (item.name || '').trim(),
+            alternateWeek: Boolean(item.alternateWeek),
+            seasonal: Boolean(item.seasonal)
+        })).filter(item => item.day && item.mealType && item.name);
+
+        if (formattedItems.length === 0) {
+            return res.status(400).json({ success: false, message: "No valid food items provided." });
+        }
+
+        // Update database table
+        await MenuItems.destroy({ truncate: true });
+        await MenuItems.bulkCreate(formattedItems);
+
+        // Update menuData.json so it persists across restarts
+        await fs.writeFile(
+            path.join(__dirname, 'menuData.json'),
+            JSON.stringify(formattedItems, null, 2),
+            'utf-8'
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: `Successfully published ${formattedItems.length} menu items!`,
+            count: formattedItems.length
+        });
+    } catch (error) {
+        console.error("Error saving updated menu:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to update menu: " + error.message
+        });
+    }
+});
+
 const feedbackFilePath = path.join(__dirname, 'feedbackData.json');
 
 app.post('/feedback', async (req, res) => {
