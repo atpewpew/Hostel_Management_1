@@ -105,11 +105,45 @@
             <span class="text-lg">4 Meals</span>
           </div>
         </div>
+        <!-- Hero Action Buttons -->
+        <div class="flex flex-wrap justify-center items-center gap-4 mt-6">
+          <% if (typeof hasPdf !== 'undefined' && hasPdf) { %>
+          <a href="/services/mess/download-pdf" class="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white font-medium px-5 py-2.5 rounded-full transition-all duration-200 border border-white/25 text-sm shadow-md hover:scale-105">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Download Official Timetable (PDF)
+          </a>
+          <% } %>
+          <% if (typeof role !== 'undefined' && role === 'admin') { %>
+          <button onclick="openPdfModal()" class="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-gray-900 font-semibold px-6 py-2.5 rounded-full transition-all duration-200 text-sm shadow-lg hover:scale-105 border border-amber-300">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            Admin: Upload Menu PDF
+          </button>
+          <% } %>
+        </div>
       </div>
     </div>
 
     <!-- Main Content -->
     <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <% if (typeof role !== 'undefined' && role === 'admin') { %>
+      <!-- Admin Action Banner -->
+      <div class="mb-8 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md shrink-0">
+            📋
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-gray-900">Administrator Menu Controls</h3>
+            <p class="text-sm text-gray-600">Upload a weekly mess timetable PDF to automatically extract food items and refresh the menu.</p>
+          </div>
+        </div>
+        <button onclick="openPdfModal()" class="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          Upload Timetable PDF
+        </button>
+      </div>
+      <% } %>
+
       <% if (query.feedback === 'success') { %>
       <div class="mb-6 p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg shadow-sm">
         <div class="flex items-center">
@@ -122,6 +156,7 @@
       <% } %>
 
       <div id="accordion-menu" class="space-y-6">
+
         <% ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].forEach((day, dayIndex) => { %>
         <div class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200">
           <h2 id="accordion-heading-<%= dayIndex %>">
@@ -253,6 +288,125 @@
       </div>
     </main>
 
+    <% if (typeof role !== 'undefined' && role === 'admin') { %>
+    <!-- PDF Upload & Verification Modal -->
+    <div id="pdfUploadModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
+        
+        <!-- Modal Header -->
+        <div class="px-6 py-4 bg-gradient-to-r from-blue-700 to-indigo-800 text-white flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center font-bold text-lg">
+              📄
+            </div>
+            <div>
+              <h3 class="text-lg font-bold">Update Mess Menu from PDF Timetable</h3>
+              <p class="text-xs text-blue-100">Upload a weekly timetable PDF to automatically parse and refresh meal plans</p>
+            </div>
+          </div>
+          <button onclick="closePdfModal()" class="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Modal Body (Scrollable) -->
+        <div class="p-6 overflow-y-auto flex-1 space-y-6">
+
+          <!-- Stage 1: Upload Step -->
+          <div id="uploadStage" class="space-y-6">
+            <div 
+              id="dropZone" 
+              class="border-2 border-dashed border-blue-300 rounded-2xl p-8 text-center bg-blue-50/50 hover:bg-blue-50/80 transition-all cursor-pointer flex flex-col items-center justify-center gap-3"
+              onclick="document.getElementById('menuPdfInput').click()"
+            >
+              <div class="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+              </div>
+              <div>
+                <p class="text-base font-semibold text-gray-800">Click to select PDF or drag and drop here</p>
+                <p class="text-xs text-gray-500 mt-1">Accepts standard weekly timetable PDF (.pdf format, up to 15MB)</p>
+              </div>
+              <input type="file" id="menuPdfInput" accept="application/pdf" class="hidden" onchange="handleFileSelected(event)" />
+              <div id="fileSelectedBadge" class="hidden inline-flex items-center gap-2 bg-blue-100 text-blue-800 text-xs px-3 py-1.5 rounded-full font-medium mt-2">
+                <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/></svg>
+                <span id="selectedFileName">No file selected</span>
+              </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="parsingSpinner" class="hidden py-8 flex flex-col items-center justify-center gap-3">
+              <div class="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+              <p class="text-sm font-semibold text-gray-700">Analyzing PDF timetable structure and extracting food items...</p>
+              <p class="text-xs text-gray-500">Mapping days of week and meal timings</p>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <button onclick="closePdfModal()" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+              <button id="extractPdfBtn" onclick="uploadAndParsePdf()" disabled class="px-6 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                Extract Timetable
+              </button>
+            </div>
+          </div>
+
+          <!-- Stage 2: Preview & Interactive Review Step -->
+          <div id="previewStage" class="hidden space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">✅</span>
+                <div>
+                  <h4 class="text-sm font-bold text-emerald-900" id="previewTitle">Timetable Extracted Successfully</h4>
+                  <p class="text-xs text-emerald-700" id="previewSubtitle">Review the meals below. You can edit any dishes directly before publishing live.</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 text-xs">
+                <span id="badgeTotalItems" class="px-2.5 py-1 bg-white border border-emerald-300 rounded-full font-semibold text-emerald-800">0 Items</span>
+                <span id="badgeDays" class="px-2.5 py-1 bg-white border border-emerald-300 rounded-full font-semibold text-emerald-800">7 Days</span>
+              </div>
+            </div>
+
+            <!-- 7-Day x 4-Meal Table -->
+            <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-sm">
+              <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                  <tr class="bg-gray-100 text-gray-700 font-semibold border-b border-gray-200">
+                    <th class="p-3 w-28">Day</th>
+                    <th class="p-3">Breakfast (Morning)</th>
+                    <th class="p-3">Lunch (Afternoon)</th>
+                    <th class="p-3">Snacks (Evening)</th>
+                    <th class="p-3">Dinner (Night)</th>
+                  </tr>
+                </thead>
+                <tbody id="previewTableBody" class="divide-y divide-gray-200 bg-white">
+                  <!-- Dynamically generated rows -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="flex flex-wrap justify-between items-center gap-3 pt-4 border-t border-gray-100">
+              <button onclick="resetToUploadStage()" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Upload Different PDF
+              </button>
+              <div class="flex items-center gap-3">
+                <button onclick="closePdfModal()" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button id="saveMenuBtn" onclick="saveAndPublishMenu()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white text-sm font-semibold hover:from-emerald-700 hover:to-green-700 transition-all shadow-md flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  Publish to Live Menu
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    <% } %>
+
     <%- include('partials/footer.ejs') %>
 
     <script>
@@ -273,6 +427,249 @@
           }
         });
       });
+
+      // Admin PDF Upload Logic
+      let parsedMenuGrid = {};
+      const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      const ALL_MEALS = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
+
+      function openPdfModal() {
+        const modal = document.getElementById('pdfUploadModal');
+        if (modal) modal.classList.remove('hidden');
+      }
+
+      function closePdfModal() {
+        const modal = document.getElementById('pdfUploadModal');
+        if (modal) modal.classList.add('hidden');
+      }
+
+      function handleFileSelected(event) {
+        const file = event.target.files[0];
+        const badge = document.getElementById('fileSelectedBadge');
+        const badgeName = document.getElementById('selectedFileName');
+        const btn = document.getElementById('extractPdfBtn');
+        if (file) {
+          badge.classList.remove('hidden');
+          badgeName.textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+          btn.removeAttribute('disabled');
+        } else {
+          badge.classList.add('hidden');
+          btn.setAttribute('disabled', 'true');
+        }
+      }
+
+      // Drop Zone support
+      const dropZone = document.getElementById('dropZone');
+      if (dropZone) {
+        ['dragenter', 'dragover'].forEach((eventName) => {
+          dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropZone.classList.add('bg-blue-100', 'border-blue-500');
+          });
+        });
+        ['dragleave', 'drop'].forEach((eventName) => {
+          dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-blue-100', 'border-blue-500');
+          });
+        });
+        dropZone.addEventListener('drop', (e) => {
+          const dt = e.dataTransfer;
+          const files = dt.files;
+          if (files.length > 0 && files[0].name.toLowerCase().endsWith('.pdf')) {
+            document.getElementById('menuPdfInput').files = files;
+            handleFileSelected({ target: { files } });
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Invalid File',
+              text: 'Please select a valid PDF file.',
+            });
+          }
+        });
+      }
+
+      function resetToUploadStage() {
+        document.getElementById('previewStage').classList.add('hidden');
+        document.getElementById('uploadStage').classList.remove('hidden');
+        document.getElementById('parsingSpinner').classList.add('hidden');
+      }
+
+      async function uploadAndParsePdf() {
+        const fileInput = document.getElementById('menuPdfInput');
+        if (!fileInput.files || fileInput.files.length === 0) {
+          Swal.fire('Error', 'Please select a PDF file first.', 'warning');
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('menuPdf', fileInput.files[0]);
+
+        const spinner = document.getElementById('parsingSpinner');
+        const extractBtn = document.getElementById('extractPdfBtn');
+
+        spinner.classList.remove('hidden');
+        extractBtn.setAttribute('disabled', 'true');
+
+        try {
+          const response = await fetch('/services/mess/parse-pdf', {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await response.json();
+
+          spinner.classList.add('hidden');
+          extractBtn.removeAttribute('disabled');
+
+          if (!response.ok || !data.success) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Extraction Failed',
+              text: data.message || 'Could not parse timetable from the PDF.',
+            });
+            return;
+          }
+
+          // Build grid from items
+          parsedMenuGrid = {};
+          ALL_DAYS.forEach((day) => {
+            parsedMenuGrid[day] = {};
+            ALL_MEALS.forEach((meal) => {
+              parsedMenuGrid[day][meal] = [];
+            });
+          });
+
+          data.items.forEach((it) => {
+            if (parsedMenuGrid[it.day] && parsedMenuGrid[it.day][it.mealType]) {
+              parsedMenuGrid[it.day][it.mealType].push(it.name);
+            }
+          });
+
+          renderPreviewTable();
+
+          document.getElementById('badgeTotalItems').textContent = `${data.items.length} Items`;
+          document.getElementById('badgeDays').textContent = `${data.summary.daysFound.length} Days Detected`;
+
+          document.getElementById('uploadStage').classList.add('hidden');
+          document.getElementById('previewStage').classList.remove('hidden');
+        } catch (err) {
+          spinner.classList.add('hidden');
+          extractBtn.removeAttribute('disabled');
+          console.error('PDF upload error:', err);
+          Swal.fire('Error', 'Network or server error during PDF parsing.', 'error');
+        }
+      }
+
+      function renderPreviewTable() {
+        const tbody = document.getElementById('previewTableBody');
+        tbody.innerHTML = '';
+
+        ALL_DAYS.forEach((day) => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-gray-50 transition-colors';
+
+          let html = `<td class="p-3 font-semibold text-gray-900 align-top">${day}</td>`;
+
+          ALL_MEALS.forEach((meal) => {
+            const dishes = (parsedMenuGrid[day][meal] || []).join(', ');
+            html += `
+              <td class="p-2 align-top">
+                <textarea 
+                  rows="2" 
+                  class="w-full text-xs p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+                  data-day="${day}" 
+                  data-meal="${meal}"
+                  placeholder="e.g. Dish 1, Dish 2"
+                >${dishes}</textarea>
+              </td>
+            `;
+          });
+
+          tr.innerHTML = html;
+          tbody.appendChild(tr);
+        });
+      }
+
+      async function saveAndPublishMenu() {
+        const textareas = document.querySelectorAll('#previewTableBody textarea');
+        const items = [];
+
+        textareas.forEach((ta) => {
+          const day = ta.getAttribute('data-day');
+          const meal = ta.getAttribute('data-meal');
+          const text = ta.value.trim();
+          if (text) {
+            const dishes = text
+              .split(/[,;\n]+/)
+              .map((s) => s.trim())
+              .filter(Boolean);
+            dishes.forEach((d) => {
+              items.push({
+                day,
+                mealType: meal,
+                name: d,
+                alternateWeek: false,
+                seasonal: false,
+              });
+            });
+          }
+        });
+
+        if (items.length === 0) {
+          Swal.fire('Warning', 'Menu is empty! Please add dishes to at least some meals.', 'warning');
+          return;
+        }
+
+        const confirmResult = await Swal.fire({
+          title: 'Publish Menu?',
+          text: `This will update the live mess menu with ${items.length} dishes.`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#059669',
+          cancelButtonColor: '#6b7280',
+          confirmButtonText: 'Yes, Publish Live!',
+        });
+
+        if (!confirmResult.isConfirmed) return;
+
+        const saveBtn = document.getElementById('saveMenuBtn');
+        saveBtn.setAttribute('disabled', 'true');
+        saveBtn.innerHTML = 'Publishing...';
+
+        try {
+          const res = await fetch('/services/mess/update-menu', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items }),
+          });
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            await Swal.fire({
+              icon: 'success',
+              title: 'Menu Published!',
+              text: data.message || 'Hostel mess menu has been updated.',
+              timer: 1800,
+              showConfirmButton: false,
+            });
+            window.location.href = '/services/mess';
+          } else {
+            Swal.fire('Error', data.message || 'Failed to update menu.', 'error');
+            saveBtn.removeAttribute('disabled');
+            saveBtn.innerHTML = 'Publish to Live Menu';
+          }
+        } catch (err) {
+          console.error('Error updating menu:', err);
+          Swal.fire('Error', 'Network or server error while updating menu.', 'error');
+          saveBtn.removeAttribute('disabled');
+          saveBtn.innerHTML = 'Publish to Live Menu';
+        }
+      }
+
+      // Auto open modal if ?openUpload=true
+      if (new URLSearchParams(window.location.search).get('openUpload') === 'true') {
+        openPdfModal();
+      }
     </script>
     <script src="/js/navbar.js"></script>
   </body>
