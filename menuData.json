@@ -1,51 +1,541 @@
 [
-    { "day": "Sunday", "mealType": "Breakfast", "name": "Maggie", "alternateWeek": false, "seasonal": false },
-    { "day": "Sunday", "mealType": "Breakfast", "name": "Ketchup", "alternateWeek": false, "seasonal": false },
-    { "day": "Sunday", "mealType": "Lunch", "name": "White Rice, Chapati", "alternateWeek": false, "seasonal": false },
-    { "day": "Sunday", "mealType": "Lunch", "name": "Paneer Butter Masala", "alternateWeek": false, "seasonal": false },
-    { "day": "Sunday", "mealType": "Dinner", "name": "Jeera Rice, Roti", "alternateWeek": false, "seasonal": false },
-    { "day": "Sunday", "mealType": "Dinner", "name": "Chicken Curry", "alternateWeek": false, "seasonal": false },
-  
-    { "day": "Monday", "mealType": "Breakfast", "name": "Rava Dosa", "alternateWeek": false, "seasonal": false },
-    { "day": "Monday", "mealType": "Breakfast", "name": "Chutney", "alternateWeek": false, "seasonal": false },
-    { "day": "Monday", "mealType": "Lunch", "name": "Rajma Curry", "alternateWeek": false, "seasonal": false },
-    { "day": "Monday", "mealType": "Lunch", "name": "Rice, Roti", "alternateWeek": false, "seasonal": false },
-    { "day": "Monday", "mealType": "Dinner", "name": "Veg Biryani", "alternateWeek": false, "seasonal": false },
-    { "day": "Monday", "mealType": "Dinner", "name": "Raita", "alternateWeek": false, "seasonal": false },
-  
-    { "day": "Tuesday", "mealType": "Breakfast", "name": "Poha", "alternateWeek": false, "seasonal": false },
-    { "day": "Tuesday", "mealType": "Breakfast", "name": "Tea", "alternateWeek": false, "seasonal": false },
-    { "day": "Tuesday", "mealType": "Lunch", "name": "Dal Tadka", "alternateWeek": false, "seasonal": false },
-    { "day": "Tuesday", "mealType": "Lunch", "name": "Rice, Chapati", "alternateWeek": false, "seasonal": false },
-    { "day": "Tuesday", "mealType": "Dinner", "name": "Pulao", "alternateWeek": false, "seasonal": false },
-    { "day": "Tuesday", "mealType": "Dinner", "name": "Paneer Bhurji", "alternateWeek": false, "seasonal": false },
-  
-    { "day": "Wednesday", "mealType": "Breakfast", "name": "Idli", "alternateWeek": false, "seasonal": false },
-    { "day": "Wednesday", "mealType": "Breakfast", "name": "Sambar", "alternateWeek": false, "seasonal": false },
-    { "day": "Wednesday", "mealType": "Lunch", "name": "Chole Masala", "alternateWeek": false, "seasonal": false },
-    { "day": "Wednesday", "mealType": "Lunch", "name": "Rice, Roti", "alternateWeek": false, "seasonal": false },
-    { "day": "Wednesday", "mealType": "Dinner", "name": "Veg Fried Rice", "alternateWeek": false, "seasonal": false },
-    { "day": "Wednesday", "mealType": "Dinner", "name": "Manchurian", "alternateWeek": false, "seasonal": false },
-  
-    { "day": "Thursday", "mealType": "Breakfast", "name": "Aloo Paratha", "alternateWeek": false, "seasonal": false },
-    { "day": "Thursday", "mealType": "Breakfast", "name": "Curd", "alternateWeek": false, "seasonal": false },
-    { "day": "Thursday", "mealType": "Lunch", "name": "Mixed Veg Curry", "alternateWeek": false, "seasonal": false },
-    { "day": "Thursday", "mealType": "Lunch", "name": "Rice, Roti", "alternateWeek": false, "seasonal": false },
-    { "day": "Thursday", "mealType": "Dinner", "name": "Dal Khichdi", "alternateWeek": false, "seasonal": false },
-    { "day": "Thursday", "mealType": "Dinner", "name": "Papad", "alternateWeek": false, "seasonal": false },
-  
-    { "day": "Friday", "mealType": "Breakfast", "name": "Uttapam", "alternateWeek": false, "seasonal": false },
-    { "day": "Friday", "mealType": "Breakfast", "name": "Chutney", "alternateWeek": false, "seasonal": false },
-    { "day": "Friday", "mealType": "Lunch", "name": "Dal Fry", "alternateWeek": false, "seasonal": false },
-    { "day": "Friday", "mealType": "Lunch", "name": "Rice, Roti", "alternateWeek": false, "seasonal": false },
-    { "day": "Friday", "mealType": "Dinner", "name": "Veg Pulao", "alternateWeek": false, "seasonal": false },
-    { "day": "Friday", "mealType": "Dinner", "name": "Paneer Curry", "alternateWeek": false, "seasonal": false },
-  
-    { "day": "Saturday", "mealType": "Breakfast", "name": "Puri Bhaji", "alternateWeek": false, "seasonal": false },
-    { "day": "Saturday", "mealType": "Breakfast", "name": "Pickle", "alternateWeek": false, "seasonal": false },
-    { "day": "Saturday", "mealType": "Lunch", "name": "Kadhi Pakora", "alternateWeek": false, "seasonal": false },
-    { "day": "Saturday", "mealType": "Lunch", "name": "Rice, Chapati", "alternateWeek": false, "seasonal": false },
-    { "day": "Saturday", "mealType": "Dinner", "name": "Veg Pasta", "alternateWeek": false, "seasonal": false },
-    { "day": "Saturday", "mealType": "Dinner", "name": "Garlic Bread", "alternateWeek": false, "seasonal": false }
-  ]
-  
+  {
+    "day": "Monday",
+    "mealType": "Breakfast",
+    "name": "Rava Dosa",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Monday",
+    "mealType": "Breakfast",
+    "name": "Chutney",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Monday",
+    "mealType": "Breakfast",
+    "name": "Tea",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Monday",
+    "mealType": "Lunch",
+    "name": "Rajma Curry",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Monday",
+    "mealType": "Lunch",
+    "name": "Rice",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Monday",
+    "mealType": "Lunch",
+    "name": "Roti",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Monday",
+    "mealType": "Lunch",
+    "name": "Salad",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Monday",
+    "mealType": "Snacks",
+    "name": "Samosa",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Monday",
+    "mealType": "Snacks",
+    "name": "Masala Chai",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Monday",
+    "mealType": "Dinner",
+    "name": "Veg Biryani",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Monday",
+    "mealType": "Dinner",
+    "name": "Raita",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Monday",
+    "mealType": "Dinner",
+    "name": "Gulab Jamun",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Tuesday",
+    "mealType": "Breakfast",
+    "name": "Poha",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Tuesday",
+    "mealType": "Breakfast",
+    "name": "Sev",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Tuesday",
+    "mealType": "Breakfast",
+    "name": "Milk",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Tuesday",
+    "mealType": "Breakfast",
+    "name": "Banana",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Tuesday",
+    "mealType": "Lunch",
+    "name": "Dal Tadka",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Tuesday",
+    "mealType": "Lunch",
+    "name": "Rice",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Tuesday",
+    "mealType": "Lunch",
+    "name": "Chapati",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Tuesday",
+    "mealType": "Lunch",
+    "name": "Curd",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Tuesday",
+    "mealType": "Snacks",
+    "name": "Biscuits",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Tuesday",
+    "mealType": "Snacks",
+    "name": "Coffee",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Tuesday",
+    "mealType": "Dinner",
+    "name": "Pulao",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Tuesday",
+    "mealType": "Dinner",
+    "name": "Paneer Bhurji",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Tuesday",
+    "mealType": "Dinner",
+    "name": "Salad",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Wednesday",
+    "mealType": "Breakfast",
+    "name": "Idli",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Wednesday",
+    "mealType": "Breakfast",
+    "name": "Sambar",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Wednesday",
+    "mealType": "Breakfast",
+    "name": "Coconut Chutney",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Wednesday",
+    "mealType": "Lunch",
+    "name": "Chole Masala",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Wednesday",
+    "mealType": "Lunch",
+    "name": "Bhature",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Wednesday",
+    "mealType": "Lunch",
+    "name": "Rice",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Wednesday",
+    "mealType": "Snacks",
+    "name": "Veg Cutlet",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Wednesday",
+    "mealType": "Snacks",
+    "name": "Tea",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Wednesday",
+    "mealType": "Dinner",
+    "name": "Veg Fried Rice",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Wednesday",
+    "mealType": "Dinner",
+    "name": "Manchurian",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Thursday",
+    "mealType": "Breakfast",
+    "name": "Aloo Paratha",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Thursday",
+    "mealType": "Breakfast",
+    "name": "Curd",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Thursday",
+    "mealType": "Breakfast",
+    "name": "Pickle",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Thursday",
+    "mealType": "Lunch",
+    "name": "Mixed Veg Curry",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Thursday",
+    "mealType": "Lunch",
+    "name": "Rice",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Thursday",
+    "mealType": "Lunch",
+    "name": "Roti",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Thursday",
+    "mealType": "Snacks",
+    "name": "Pani Puri",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Thursday",
+    "mealType": "Snacks",
+    "name": "Chai",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Thursday",
+    "mealType": "Dinner",
+    "name": "Dal Khichdi",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Thursday",
+    "mealType": "Dinner",
+    "name": "Papad",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Thursday",
+    "mealType": "Dinner",
+    "name": "Pickle",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Friday",
+    "mealType": "Breakfast",
+    "name": "Uttapam",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Friday",
+    "mealType": "Breakfast",
+    "name": "Tomato Chutney",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Friday",
+    "mealType": "Lunch",
+    "name": "Dal Fry",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Friday",
+    "mealType": "Lunch",
+    "name": "Rice",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Friday",
+    "mealType": "Lunch",
+    "name": "Roti",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Friday",
+    "mealType": "Lunch",
+    "name": "Jeera Aloo",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Friday",
+    "mealType": "Snacks",
+    "name": "Bonda",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Friday",
+    "mealType": "Snacks",
+    "name": "Tea",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Friday",
+    "mealType": "Dinner",
+    "name": "Veg Pulao",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Friday",
+    "mealType": "Dinner",
+    "name": "Paneer Curry",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Friday",
+    "mealType": "Dinner",
+    "name": "Sweet",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Saturday",
+    "mealType": "Breakfast",
+    "name": "Puri Bhaji",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Saturday",
+    "mealType": "Breakfast",
+    "name": "Halwa",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Saturday",
+    "mealType": "Lunch",
+    "name": "Kadhi Pakora",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Saturday",
+    "mealType": "Lunch",
+    "name": "Rice",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Saturday",
+    "mealType": "Lunch",
+    "name": "Chapati",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Saturday",
+    "mealType": "Snacks",
+    "name": "Sweet Corn",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Saturday",
+    "mealType": "Snacks",
+    "name": "Coffee",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Saturday",
+    "mealType": "Dinner",
+    "name": "Veg Pasta",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Saturday",
+    "mealType": "Dinner",
+    "name": "Garlic Bread",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Sunday",
+    "mealType": "Breakfast",
+    "name": "Masala Dosa",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Sunday",
+    "mealType": "Breakfast",
+    "name": "Sambar",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Sunday",
+    "mealType": "Breakfast",
+    "name": "Coffee",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Sunday",
+    "mealType": "Lunch",
+    "name": "Paneer Butter Masala",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Sunday",
+    "mealType": "Lunch",
+    "name": "Naan",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Sunday",
+    "mealType": "Lunch",
+    "name": "Pulao",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Sunday",
+    "mealType": "Snacks",
+    "name": "Cake",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Sunday",
+    "mealType": "Snacks",
+    "name": "Tea",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Sunday",
+    "mealType": "Dinner",
+    "name": "Jeera Rice",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Sunday",
+    "mealType": "Dinner",
+    "name": "Dal Makhani",
+    "alternateWeek": false,
+    "seasonal": false
+  },
+  {
+    "day": "Sunday",
+    "mealType": "Dinner",
+    "name": "Ice Cream",
+    "alternateWeek": false,
+    "seasonal": false
+  }
+]
