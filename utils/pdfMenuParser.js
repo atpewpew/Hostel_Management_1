@@ -3,17 +3,19 @@ const fs = require('fs').promises;
 
 // Standard day names in chronological order
 const DAYS_OF_WEEK = [
+    'Sunday',
     'Monday',
     'Tuesday',
     'Wednesday',
     'Thursday',
     'Friday',
-    'Saturday',
-    'Sunday'
+    'Saturday'
 ];
 
 // Day aliases mapping
 const DAY_ALIASES = {
+    'sun': 'Sunday',
+    'sunday': 'Sunday',
     'mon': 'Monday',
     'monday': 'Monday',
     'tue': 'Tuesday',
@@ -28,9 +30,7 @@ const DAY_ALIASES = {
     'fri': 'Friday',
     'friday': 'Friday',
     'sat': 'Saturday',
-    'saturday': 'Saturday',
-    'sun': 'Sunday',
-    'sunday': 'Sunday'
+    'saturday': 'Saturday'
 };
 
 // Meal types standard list
@@ -63,7 +63,7 @@ function matchDay(str) {
 }
 
 /**
- * Strict matcher for DAY headers in tables (rejects food items)
+ * Strict matcher for DAY headers in tables
  */
 function matchDayHeader(str) {
     if (!str || str.split(',').length > 1) return null;
@@ -75,7 +75,7 @@ function matchDayHeader(str) {
 }
 
 /**
- * Strict matcher for MEAL headers in tables (rejects food items containing "tea", "milk", etc.)
+ * Strict matcher for MEAL headers in tables
  */
 function matchMealHeader(str) {
     if (!str || str.split(',').length > 1) return null;
@@ -83,19 +83,15 @@ function matchMealHeader(str) {
     if (trimmed.length > 35) return null;
     const lower = trimmed.toLowerCase();
 
-    // Check meal names
     if (/breakfast|b\/f|\bbf\b/i.test(lower)) return 'Breakfast';
     if (/lunch/i.test(lower)) return 'Lunch';
     if (/snacks?|hi-tea|high\s*tea|tiffin/i.test(lower)) return 'Snacks';
     if (/dinner|supper/i.test(lower)) return 'Dinner';
 
-    // If string has "tea", only treat as header if short like "Evening Tea" or "Tea Time"
-    // and definitely not a dish list
     if (/\btea\b/i.test(lower) && trimmed.split(/\s+/).length <= 2 && !/dosa|idli|samosa|bonda|cake|curry|rice/i.test(lower)) {
         return 'Snacks';
     }
 
-    // Check timing patterns in headers (e.g. 7:30 to 9:30 AM -> Breakfast)
     if (/(0?[7-9]:[0-5][0-9]|10:00)\s*(am)?/i.test(lower)) return 'Breakfast';
     if (/(1[2-4]:[0-5][0-9]|0?1:[0-5][0-9]|0?2:[0-5][0-9])\s*(pm)?/i.test(lower)) return 'Lunch';
     if (/(1[6-8]:[0-5][0-9]|0?4:[0-5][0-9]|0?5:[0-5][0-9]|0?6:[0-5][0-9])\s*(pm)?/i.test(lower)) return 'Snacks';
@@ -105,16 +101,65 @@ function matchMealHeader(str) {
 }
 
 /**
- * Check if text is non-dish metadata (headers, table titles, page noise)
+ * Check if text is non-dish metadata (headers, table titles, page noise, instructions, footnotes)
  */
-function isNoiseText(str) {
+function isNoiseText(str, w = 0) {
     if (!str || str.length < 2) return true;
-    const lower = str.toLowerCase().trim();
+    const trimmed = str.trim();
+    const lower = trimmed.toLowerCase();
+
+    // Spanning width note (across multiple columns in timetable)
+    if (w > 200) return true;
+
+    // Header keywords & instructions
     if (/^(day|days|time|timings|timing|menu|mess|timetable|hostel|weekly|monthly|date|sr|no|s\.no)$/i.test(lower)) {
         return true;
     }
     if (/hostel\s+mess\s+weekly/i.test(lower)) return true;
+
+    // Common footnote and instruction patterns
+    if (/^note\s*:/i.test(lower)) return true;
+    if (/to be provided everyday/i.test(lower)) return true;
+    if (/equal quantity without repeating/i.test(lower)) return true;
+    if (/quantity of (chicken|paneer)/i.test(lower)) return true;
+    if (/cooked weight/i.test(lower)) return true;
+    if (/special dinner/i.test(lower)) return true;
+    if (/starters\s*:/i.test(lower)) return true;
+    if (/main course\s*:/i.test(lower)) return true;
+    if (/monthly once/i.test(lower)) return true;
+    if (/rs\s*:\s*\d+/i.test(lower)) return true;
+
+    // Category row labels in multi-category timetable menus
+    const categoryLabels = [
+        'regular items', 'accompaniments', 'sprouts', 'sides', 'curry item',
+        'dal item', 'dry item', 'sambar/rasam/pulusu', 'sambar/rasam', 'drink',
+        'snack items', 'fruits', 'sweets/ice-cream', 'sweets', 'salad', 'roti/chapati'
+    ];
+    if (categoryLabels.includes(lower)) return true;
+
     return false;
+}
+
+/**
+ * Clean individual dish string
+ */
+function cleanDish(str) {
+    if (!str) return '';
+    return str
+        .replace(/^[\s,;+•*-]+|[\s,;+•*-]+$/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+/**
+ * Split comma, newline, slash separated food list into distinct dish strings
+ */
+function splitIntoDishes(str) {
+    if (!str) return [];
+    return str
+        .split(/[,;\n\r•\*]+|\s\+\s/)
+        .map(cleanDish)
+        .filter(s => s.length >= 2 && !/^(and|with|or)$/i.test(s));
 }
 
 /**
@@ -170,7 +215,7 @@ function extractMenuFromPdfData(pdfData) {
                     text: cleaned,
                     x: t.x,
                     y: t.y + (pageIdx * 100), // Offset multi-page Y coordinates
-                    w: t.w || 1,
+                    w: t.w || 0,
                     page: pageIdx
                 });
             }
@@ -189,7 +234,6 @@ function extractMenuFromPdfData(pdfData) {
         return formatExtractionResult(fallbackResult.items);
     }
 
-    // If gridResult has any items at all, return it
     if (gridResult && gridResult.items && gridResult.items.length > 0) {
         return formatExtractionResult(gridResult.items);
     }
@@ -201,6 +245,7 @@ function extractMenuFromPdfData(pdfData) {
  * Coordinate / Grid-based extractor
  */
 function extractFromGrid(allTexts) {
+    // Collect day and meal labels
     const dayLabels = [];
     const mealLabels = [];
 
@@ -220,7 +265,6 @@ function extractFromGrid(allTexts) {
         return { items: [] };
     }
 
-    // Calculate spreads
     const dayXs = dayLabels.map(l => l.x);
     const dayYs = dayLabels.map(l => l.y);
     const mealXs = mealLabels.map(l => l.x);
@@ -232,56 +276,19 @@ function extractFromGrid(allTexts) {
     const mealYSpread = mealYs.length > 1 ? Math.max(...mealYs) - Math.min(...mealYs) : 0;
 
     // Determine Orientation:
+    // Mode A: Days as Columns (X), Meals as Rows/Sections (Y)
+    // Mode B: Meals as Columns (X), Days as Rows/Sections (Y)
     let isDaysAsColumns = false;
-    if (dayXSpread > dayYSpread && mealYSpread >= mealXSpread) {
+    if (dayXSpread > 15 && dayYSpread < 3) {
         isDaysAsColumns = true;
-    } else if (mealXSpread > mealYSpread && dayYSpread >= dayXSpread) {
+    } else if (mealXSpread > 15 && mealYSpread < 3) {
         isDaysAsColumns = false;
+    } else if (dayXSpread > dayYSpread) {
+        isDaysAsColumns = true;
     } else {
-        isDaysAsColumns = dayXSpread > mealXSpread;
+        isDaysAsColumns = false;
     }
 
-    let cols = [];
-    let rows = [];
-
-    if (isDaysAsColumns) {
-        cols = cluster1D(dayLabels, 'x', 2.0).map(cluster => ({
-            type: 'day',
-            value: cluster.items[0].day,
-            x: cluster.center
-        })).sort((a, b) => a.x - b.x);
-
-        rows = cluster1D(mealLabels, 'y', 0.8).map(cluster => ({
-            type: 'meal',
-            value: cluster.items[0].meal,
-            y: cluster.center
-        })).sort((a, b) => a.y - b.y);
-    } else {
-        cols = cluster1D(mealLabels, 'x', 2.0).map(cluster => ({
-            type: 'meal',
-            value: cluster.items[0].meal,
-            x: cluster.center
-        })).sort((a, b) => a.x - b.x);
-
-        rows = cluster1D(dayLabels, 'y', 0.8).map(cluster => ({
-            type: 'day',
-            value: cluster.items[0].day,
-            y: cluster.center
-        })).sort((a, b) => a.y - b.y);
-    }
-
-    // Determine table bounding box:
-    const minTableY = Math.min(
-        ...rows.map(r => r.y),
-        ...mealLabels.map(l => l.y),
-        ...dayLabels.map(l => l.y)
-    );
-
-    // Calculate intervals
-    const colIntervals = calculateIntervals(cols, 'x');
-    const rowIntervals = calculateIntervals(rows, 'y');
-
-    // Matrix to store food strings: cells[day][meal] = []
     const cells = {};
     DAYS_OF_WEEK.forEach(d => {
         cells[d] = {};
@@ -290,58 +297,136 @@ function extractFromGrid(allTexts) {
         });
     });
 
-    // Map each text item to (day, meal)
-    allTexts.forEach(item => {
-        if (item.y < minTableY - 1.0) {
-            return;
-        }
-
-        // Filter out headers themselves
-        if (dayLabels.some(l => l.text === item.text && Math.abs(l.x - item.x) < 0.5 && Math.abs(l.y - item.y) < 0.5)) {
-            return;
-        }
-        if (mealLabels.some(l => l.text === item.text && Math.abs(l.x - item.x) < 0.5 && Math.abs(l.y - item.y) < 0.5)) {
-            return;
-        }
-
-        if (isNoiseText(item.text)) {
-            return;
-        }
-
-        // Find matching column and row
-        const matchedCol = findMatchingInterval(colIntervals, item.x);
-        const matchedRow = findMatchingInterval(rowIntervals, item.y);
-
-        if (matchedCol && matchedRow) {
-            const day = matchedCol.type === 'day' ? matchedCol.value : matchedRow.value;
-            const meal = matchedCol.type === 'meal' ? matchedCol.value : matchedRow.value;
-
-            if (cells[day] && cells[day][meal]) {
-                cells[day][meal].push(item.text);
+    // Handle Mode A: Days As Columns
+    if (isDaysAsColumns) {
+        const dayCols = [];
+        dayLabels.forEach(l => {
+            if (!dayCols.some(c => c.day === l.day)) {
+                dayCols.push({ day: l.day, x: l.x, y: l.y });
             }
-        }
-    });
+        });
+        dayCols.sort((a, b) => a.x - b.x);
+
+        const minDayX = Math.min(...dayCols.map(c => c.x));
+        const leftMargin = minDayX - 1.5;
+        const topHeaderY = Math.min(...dayCols.map(c => c.y));
+
+        // Find meal row markers in left column (x < leftMargin)
+        const mealMarkers = {};
+        mealLabels.forEach(l => {
+            if (l.x < leftMargin + 2.0 && !mealMarkers[l.meal]) {
+                mealMarkers[l.meal] = l.y;
+            }
+        });
+
+        // Determine vertical meal bands
+        const yB = mealMarkers['Breakfast'] || (topHeaderY + 2.0);
+        const yL = mealMarkers['Lunch'] || (yB + 5.0);
+        const yS = mealMarkers['Snacks'] || (yL + 4.0);
+        const yD = mealMarkers['Dinner'] || (yS + 4.0);
+
+        // Calculate transitions
+        const bBreakfastStart = topHeaderY + 0.3;
+        const bLunchStart = (yB + yL) / 2;
+        const bSnacksStart = (yL + yS) / 2;
+        const bDinnerStart = (yS + yD) / 2;
+        const bDinnerEnd = yD + (yD - yS);
+
+        allTexts.forEach(item => {
+            if (item.x < leftMargin) return; // Left column header
+            if (item.y < bBreakfastStart || item.y >= bDinnerEnd) return; // Outside table
+            if (isNoiseText(item.text, item.w)) return;
+
+            // Match day column
+            let matchedDay = null;
+            let minDiff = 999;
+            dayCols.forEach(col => {
+                const diff = Math.abs(col.x - item.x);
+                if (diff < 2.5 && diff < minDiff) {
+                    minDiff = diff;
+                    matchedDay = col.day;
+                }
+            });
+            if (!matchedDay) return;
+
+            // Match meal band
+            let matchedMeal = null;
+            if (item.y >= bBreakfastStart && item.y < bLunchStart) matchedMeal = 'Breakfast';
+            else if (item.y >= bLunchStart && item.y < bSnacksStart) matchedMeal = 'Lunch';
+            else if (item.y >= bSnacksStart && item.y < bDinnerStart) matchedMeal = 'Snacks';
+            else if (item.y >= bDinnerStart && item.y < bDinnerEnd) matchedMeal = 'Dinner';
+
+            if (!matchedMeal) return;
+
+            const dishes = splitIntoDishes(item.text);
+            dishes.forEach(d => {
+                if (!isNoiseText(d, 0)) {
+                    cells[matchedDay][matchedMeal].push(d);
+                }
+            });
+        });
+
+    } else {
+        // Handle Mode B: Meals As Columns, Days As Rows
+        const cols = cluster1D(mealLabels, 'x', 2.0).map(cluster => ({
+            type: 'meal',
+            value: cluster.items[0].meal,
+            x: cluster.center
+        })).sort((a, b) => a.x - b.x);
+
+        const rows = cluster1D(dayLabels, 'y', 0.8).map(cluster => ({
+            type: 'day',
+            value: cluster.items[0].day,
+            y: cluster.center
+        })).sort((a, b) => a.y - b.y);
+
+        const minTableY = Math.min(
+            ...rows.map(r => r.y),
+            ...mealLabels.map(l => l.y),
+            ...dayLabels.map(l => l.y)
+        );
+
+        const colIntervals = calculateIntervals(cols, 'x');
+        const rowIntervals = calculateIntervals(rows, 'y');
+
+        allTexts.forEach(item => {
+            if (item.y < minTableY - 1.0) return;
+            if (dayLabels.some(l => l.text === item.text && Math.abs(l.x - item.x) < 0.5 && Math.abs(l.y - item.y) < 0.5)) return;
+            if (mealLabels.some(l => l.text === item.text && Math.abs(l.x - item.x) < 0.5 && Math.abs(l.y - item.y) < 0.5)) return;
+            if (isNoiseText(item.text, item.w)) return;
+
+            const matchedCol = findMatchingInterval(colIntervals, item.x);
+            const matchedRow = findMatchingInterval(rowIntervals, item.y);
+
+            if (matchedCol && matchedRow) {
+                const day = matchedRow.value;
+                const meal = matchedCol.value;
+                if (cells[day] && cells[day][meal]) {
+                    const dishes = splitIntoDishes(item.text);
+                    dishes.forEach(d => {
+                        if (!isNoiseText(d, 0)) {
+                            cells[day][meal].push(d);
+                        }
+                    });
+                }
+            }
+        });
+    }
 
     // Flatten into item objects
     const items = [];
     for (const day of DAYS_OF_WEEK) {
         for (const meal of MEAL_TYPES) {
             const lines = cells[day][meal];
-            if (lines.length > 0) {
-                const combined = lines.join(', ');
-                const dishes = splitIntoDishes(combined);
-                dishes.forEach(dish => {
-                    if (!isNoiseText(dish)) {
-                        items.push({
-                            day,
-                            mealType: meal,
-                            name: dish,
-                            alternateWeek: false,
-                            seasonal: false
-                        });
-                    }
+            lines.forEach(dish => {
+                items.push({
+                    day,
+                    mealType: meal,
+                    name: dish,
+                    alternateWeek: false,
+                    seasonal: false
                 });
-            }
+            });
         }
     }
 
@@ -374,7 +459,7 @@ function extractFromSequentialText(allTexts) {
             return;
         }
 
-        if (isNoiseText(t.text)) return;
+        if (isNoiseText(t.text, t.w)) return;
 
         if (currentDay && currentMeal && t.text) {
             if (/^\d{1,2}[:.]\d{2}/.test(t.text)) return;
@@ -382,7 +467,7 @@ function extractFromSequentialText(allTexts) {
 
             const dishes = splitIntoDishes(t.text);
             dishes.forEach(dish => {
-                if (!isNoiseText(dish)) {
+                if (!isNoiseText(dish, 0)) {
                     items.push({
                         day: currentDay,
                         mealType: currentMeal,
@@ -396,17 +481,6 @@ function extractFromSequentialText(allTexts) {
     });
 
     return { items };
-}
-
-/**
- * Split comma, newline, slash separated food list into distinct dish strings
- */
-function splitIntoDishes(str) {
-    if (!str) return [];
-    return str
-        .split(/[,;\n\r•\*\+]+/)
-        .map(s => s.trim())
-        .filter(s => s.length >= 2 && !/^(and|with|or)$/i.test(s));
 }
 
 /**
