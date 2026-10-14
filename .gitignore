@@ -1,2 +1,8 @@
 docs/
 rules/
+.env
+.env.*
+node_modules/
+logs/
+dist/
+public/uploads/

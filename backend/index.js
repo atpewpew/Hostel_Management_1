@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -42,6 +43,7 @@ connectDB()
         app.use(express.json());
         app.use(cookieParser());
         app.use(express.urlencoded({ extended: true }));
+        app.use("/uploads", express.static(path.resolve("public/uploads")));
 
         // API documentation
         setupSwagger(app);
