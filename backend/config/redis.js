@@ -11,6 +11,7 @@ try {
     lazyConnect: true,
     maxRetriesPerRequest: 1,
     enableOfflineQueue: false,
+    retryStrategy: () => null,
   });
 
   redisClient.on("connect", () => {
