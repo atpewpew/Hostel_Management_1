@@ -44,6 +44,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface Feedback {
   _id: string;
+  messId?: string | null;
   date: string;
   day: string;
   mealType: string;
@@ -80,7 +81,13 @@ const dayOptions = [
   "Sunday",
 ];
 
-export function FeedbackDashboard() {
+interface FeedbackDashboardProps {
+  selectedMessId?: string | null;
+}
+
+export function FeedbackDashboard({
+  selectedMessId,
+}: FeedbackDashboardProps) {
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [filteredFeedbacks, setFilteredFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,6 +134,10 @@ export function FeedbackDashboard() {
   useEffect(() => {
     let filtered = [...feedbacks];
 
+    if (selectedMessId) {
+      filtered = filtered.filter((f) => String(f.messId || "") === selectedMessId);
+    }
+
     if (mealFilter !== "All") {
       filtered = filtered.filter((f) => f.mealType === mealFilter);
     }
@@ -166,6 +177,7 @@ export function FeedbackDashboard() {
 
     setFilteredFeedbacks(filtered);
   }, [
+    selectedMessId,
     mealFilter,
     ratingFilter,
     hostelFilter,
@@ -180,7 +192,7 @@ export function FeedbackDashboard() {
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [mealFilter, ratingFilter, hostelFilter, dateFrom, dateTo, dayFilter]);
+  }, [selectedMessId, mealFilter, ratingFilter, hostelFilter, dateFrom, dateTo, dayFilter]);
 
   // Calculate stats
   const calculateStats = () => {
@@ -233,10 +245,20 @@ export function FeedbackDashboard() {
 
   // numbered pagination helper removed — using simple anchored footer for consistency
 
-  // Get unique hostels
-  const hostels = [
-    "All",
-    ...Array.from(new Set(feedbacks.map((f) => f.user.hostelId))).sort(),
+  // Build unique hostel options using readable names.
+  const hostelOptions = [
+    { value: "All", label: "All" },
+    ...Array.from(
+      new Map(
+        feedbacks.map((f) => [
+          f.user.hostelId,
+          {
+            value: f.user.hostelId,
+            label: f.user.hostelName ?? f.user.hostelId,
+          },
+        ])
+      ).values()
+    ).sort((a, b) => a.label.localeCompare(b.label)),
   ];
 
   // If current user is a warden, force hostel filter to their hostel and don't show the select
@@ -516,9 +538,9 @@ export function FeedbackDashboard() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {hostels.map((hostel) => (
-                      <SelectItem key={hostel} value={hostel}>
-                        {hostel}
+                    {hostelOptions.map((hostel) => (
+                      <SelectItem key={hostel.value} value={hostel.value}>
+                        {hostel.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

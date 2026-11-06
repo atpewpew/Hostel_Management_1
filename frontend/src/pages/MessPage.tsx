@@ -65,6 +65,10 @@ function MessPage() {
 
   // Only students can submit feedback
   const canSubmitFeedback = user?.role === "student";
+  const studentAssignedMessId = user?.role === "student" ? user?.messId ?? null : null;
+  const studentCanAccessAssignedMess =
+    !canSubmitFeedback ||
+    (Boolean(studentAssignedMessId) && selectedMessId === studentAssignedMessId);
 
   // Admins and wardens can view dashboard
   const canViewDashboard =
@@ -76,13 +80,31 @@ function MessPage() {
       setMessListLoading(true);
       const response = await apiClient.get("/mess/list");
       const list: Mess[] = response.data.messes || [];
+      if (canSubmitFeedback) {
+        if (!studentAssignedMessId) {
+          setMesses([]);
+          setSelectedMessId(null);
+          return;
+        }
+
+        const assignedMess = list.find((mess) => mess._id === studentAssignedMessId);
+        if (assignedMess) {
+          setMesses([assignedMess]);
+          setSelectedMessId(assignedMess._id);
+        } else {
+          setMesses([]);
+          setSelectedMessId(null);
+        }
+        return;
+      }
+
       setMesses(list);
-      // Auto-select first mess if none selected
       if (list.length > 0 && !selectedMessId) {
         setSelectedMessId(list[0]._id);
       }
     } catch {
       setMesses([]);
+      setSelectedMessId(null);
     } finally {
       setMessListLoading(false);
     }
@@ -113,7 +135,7 @@ function MessPage() {
       fetchMesses();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [isAuthenticated, canSubmitFeedback, studentAssignedMessId]);
 
   // Fetch menu when selected mess changes
   useEffect(() => {
@@ -141,6 +163,14 @@ function MessPage() {
       setFeedbackStatus("loading");
       setFeedbackError(null);
 
+      if (canSubmitFeedback && !studentCanAccessAssignedMess) {
+        setFeedbackStatus("failed");
+        setFeedbackError(
+          "You can submit feedback only for your assigned mess."
+        );
+        return;
+      }
+
       await apiClient.post("/mess/feedback", {
         date: data.date.toISOString(),
         mealType: data.mealType,
@@ -159,6 +189,9 @@ function MessPage() {
   };
 
   const handleMessChange = (messId: string) => {
+    if (canSubmitFeedback) {
+      return;
+    }
     setSelectedMessId(messId);
   };
 
@@ -176,7 +209,20 @@ function MessPage() {
       return (
         <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg border border-dashed">
           <Store className="size-4" />
-          <span>No messes registered yet</span>
+          <span>
+            {canSubmitFeedback
+              ? "No assigned mess found for your account"
+              : "No messes registered yet"}
+          </span>
+        </div>
+      );
+    }
+
+    if (canSubmitFeedback) {
+      return (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg border border-dashed">
+          <Store className="size-4" />
+          <span>Assigned mess: {messes[0]?.name || user?.messName || "N/A"}</span>
         </div>
       );
     }
@@ -236,7 +282,7 @@ function MessPage() {
               </h1>
               <p className="text-muted-foreground text-sm">
                 {canSubmitFeedback
-                  ? "Explore today's meals, browse the weekly menu, and share your dining experience"
+                  ? "Explore your assigned mess menu and share your dining experience"
                   : canViewDashboard
                   ? "Manage mess menu and view student feedback"
                   : "Explore today's meals and browse the weekly menu schedule"}
@@ -246,7 +292,7 @@ function MessPage() {
               {/* Mess Selector */}
               <MessSelector />
 
-              {canSubmitFeedback && !showFeedbackForm && (
+              {canSubmitFeedback && studentCanAccessAssignedMess && !showFeedbackForm && (
                 <Button
                   onClick={() => setShowFeedbackForm(true)}
                   className="shadow-lg"
@@ -318,7 +364,7 @@ function MessPage() {
 
             {/* Dashboard Content */}
             {dashboardView === "feedback" ? (
-              <FeedbackDashboard />
+              <FeedbackDashboard selectedMessId={selectedMessId} />
             ) : selectedMessId ? (
               <MenuEditor
                 currentMenu={menu}
@@ -339,7 +385,7 @@ function MessPage() {
               </div>
             )}
           </div>
-        ) : canSubmitFeedback && showFeedbackForm ? (
+        ) : canSubmitFeedback && studentCanAccessAssignedMess && showFeedbackForm ? (
           // Student Layout with Feedback: TodayMenu | WeeklyMenu | FeedbackForm
           <div className="grid gap-6 lg:grid-cols-12 xl:gap-8">
             {/* Today's Menu - Takes 4 columns */}

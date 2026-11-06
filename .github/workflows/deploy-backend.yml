@@ -1,14 +1,15 @@
 name: Deploy Backend
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_run:
+    workflows: ["Backend Tests"]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
 jobs:
   deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: SSH Setup
@@ -23,4 +24,4 @@ jobs:
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} 'export NVM_DIR="$HOME/.nvm" && \
           [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && \
           [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion" && \
-          hostname && echo hello && cd Hostelia_2.0 && pwd && git pull && cd backend && npm i && npm i -g pm2 && pm2 restart index'
+          hostname && echo hello && cd Hostelia_2.0 && pwd && git pull && cd backend && npm ci && npm i -g pm2 && (pm2 delete index 2>/dev/null || true) && pm2 start index.js --name index --update-env && pm2 save'

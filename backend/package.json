@@ -7,9 +7,12 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js",
+    "dev": "nodemon -L index.js",
     "start": "node index.js",
-    "clear-logs": "rm -rf logs"
+    "clear-logs": "rm -rf logs",
+    "test": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest --runInBand --detectOpenHandles",
+    "test:watch": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest --coverage --runInBand"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -20,6 +23,7 @@
     "express": "^5.1.0",
     "graphql": "^16.13.2",
     "graphql-http": "^1.22.4",
+    "ioredis": "^5.8.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.2",
     "multer": "^2.0.2",
@@ -31,7 +35,11 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "mongodb-memory-server": "^11.3.0",
-    "nodemon": "^3.1.10"
+    "cross-env": "^10.1.0",
+    "jest": "^30.2.0",
+    "jest-stare": "^2.5.3",
+    "mongodb-memory-server": "^10.2.3",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.4"
   }
 }

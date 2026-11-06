@@ -67,6 +67,9 @@ export default function CollegePage() {
   // Removing warden
   const [removingWardenId, setRemovingWardenId] = useState<string | null>(null);
 
+  // Deleting mess
+  const [deletingMessId, setDeletingMessId] = useState<string | null>(null);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -187,6 +190,29 @@ export default function CollegePage() {
       toast.error(msg || "Failed to remove warden");
     } finally {
       setRemovingWardenId(null);
+    }
+  };
+
+  // Delete mess
+  const handleDeleteMess = async (messId: string) => {
+    setDeletingMessId(messId);
+    try {
+      const res = await apiClient.delete(`/mess/${messId}`);
+      if (res.data?.success) {
+        toast.success("Mess deleted successfully");
+        fetchData();
+      }
+    } catch (error: unknown) {
+      const msg =
+        error &&
+        typeof error === "object" &&
+        "response" in error
+          ? (error as { response?: { data?: { message?: string } } }).response
+              ?.data?.message
+          : "Failed to delete mess";
+      toast.error(msg || "Failed to delete mess");
+    } finally {
+      setDeletingMessId(null);
     }
   };
 
@@ -380,9 +406,27 @@ export default function CollegePage() {
                         <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />
                         {mess.name}
                       </CardTitle>
-                      {isUserMess && (
-                        <Badge className="text-xs">Your Mess</Badge>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {isUserMess && (
+                          <Badge className="text-xs">Your Mess</Badge>
+                        )}
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            disabled={deletingMessId === mess._id}
+                            title="Delete mess"
+                            onClick={() => handleDeleteMess(mess._id)}
+                          >
+                            {deletingMessId === mess._id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                 </Card>

@@ -189,7 +189,11 @@ export const createComplaint = createAsyncThunk<
     }
     return response.data.problem as Complaint;
   } catch (error: unknown) {
-    const message = extractErrorMessage(error, "Failed to submit complaint");
+    let message = extractErrorMessage(error, "Failed to submit complaint");
+    if (message === "Network Error") {
+      message =
+        "Upload failed. Please check your internet connection, use a JPG/PNG image, and keep file size within 10MB.";
+    }
     return rejectWithValue(message);
   }
 });

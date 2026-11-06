@@ -2,14 +2,14 @@ import axios from "axios";
 
 import type { InternalAxiosRequestConfig } from "axios";
 
-const baseURL =
+export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ??
   (typeof window !== "undefined" && window.location.hostname === "localhost"
     ? "http://localhost:3000/api"
     : "/api");
 
 export const apiClient = axios.create({
-  baseURL,
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 

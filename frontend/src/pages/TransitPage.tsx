@@ -96,7 +96,7 @@ function TransitPage() {
     transitStatus: string;
     date: Date;
     time: string;
-    purpose: string;
+    purpose?: string;
   }) => {
     try {
       setCreateStatus("loading");
@@ -105,7 +105,7 @@ function TransitPage() {
       await apiClient.post("/transit", {
         date: data.date.toISOString(),
         time: data.time,
-        purpose: data.purpose.trim(),
+        purpose: data.purpose?.trim() || "",
         transitStatus: data.transitStatus,
       });
 

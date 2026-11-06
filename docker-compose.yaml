@@ -1,0 +1,43 @@
+services:
+  backend:
+    build: ./backend
+    container_name: hostelia-backend
+    ports: 
+     - "3000:3000"
+    env_file:
+      - ./backend/.env
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - redis
+      - rabbitmq
+    volumes:
+      - ./backend:/app   # sync backend folder with the app directory
+      - /app/node_modules
+
+  redis:
+    container_name: hostelia-redis
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: hostelia-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  frontend:
+    container_name: hostelia-frontend
+    build: ./frontend
+    ports: 
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules

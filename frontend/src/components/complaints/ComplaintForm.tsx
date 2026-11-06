@@ -199,7 +199,7 @@ export function ComplaintForm({
             <Input
               id="problemImage"
               type="file"
-              accept="image/*"
+              accept=".jpg,.jpeg,.png,image/jpeg,image/png"
               {...problemImageRegister}
               onChange={(event) => {
                 problemImageRegister.onChange(event);
@@ -211,6 +211,9 @@ export function ComplaintForm({
                 {errors.problemImage.message}
               </p>
             )}
+            <p className="text-xs text-muted-foreground">
+              Allowed formats: JPG, JPEG, PNG. Maximum size: 10MB.
+            </p>
             {preview && (
               <div className="overflow-hidden rounded-md border border-border/60">
                 <img

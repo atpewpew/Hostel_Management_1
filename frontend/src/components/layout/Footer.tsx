@@ -6,6 +6,10 @@ const footerLinks = [
   { label: "Support", to: "/contact" },
 ];
 
+const CONTACT_EMAIL = "hostelia@hostelia.abhiraj0x.me";
+const CONTACT_PHONE_DISPLAY = "+91 73555 10488";
+const CONTACT_PHONE_LINK = "tel:+917355510488";
+
 function Footer() {
   return (
     <footer className="border-t border-border bg-background">
@@ -31,11 +35,11 @@ function Footer() {
             <div>
               <p className="text-xs uppercase tracking-widest text-muted-foreground/80">Contact</p>
               <div className="mt-3 space-y-2">
-                <a href="mailto:team@hostelia.dev" className="block hover:text-foreground">
-                  team@hostelia.dev
+                <a href={`mailto:${CONTACT_EMAIL}`} className="block hover:text-foreground">
+                  {CONTACT_EMAIL}
                 </a>
-                <a href="tel:+919876543210" className="block hover:text-foreground">
-                  +91 98765 43210
+                <a href={CONTACT_PHONE_LINK} className="block hover:text-foreground">
+                  {CONTACT_PHONE_DISPLAY}
                 </a>
               </div>
             </div>
@@ -43,14 +47,6 @@ function Footer() {
         </div>
         <div className="flex flex-col gap-2 border-t border-border/70 pt-6 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
           <p>© {new Date().getFullYear()} Hostelia. All rights reserved.</p>
-          <div className="flex gap-4">
-            <Link to="/privacy" className="hover:text-foreground">
-              Privacy
-            </Link>
-            <Link to="/terms" className="hover:text-foreground">
-              Terms
-            </Link>
-          </div>
         </div>
       </div>
     </footer>

@@ -43,4 +43,7 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
+userSchema.index({ collegeId: 1, role: 1 });
+userSchema.index({ name: "text", rollNo: "text" });
+
 export default mongoose.model('User', userSchema);

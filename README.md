@@ -1,18 +1,21 @@
 # Hostelia - Hostel Management System
 
-A full-stack hostel management web application built for efficient administration of hostel operations including student management, fee tracking, mess management, transit records, complaints handling, and announcements.
+Hostelia is a full-stack hostel management platform for students, wardens, college admins, and platform managers. It covers user and hostel operations, complaints, fee workflows, mess and transit management, announcements, and real-time notifications.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
+- Node.js `v18+`
+- npm
 - MongoDB (local or Atlas)
-- npm or yarn
+- Cloudinary account (for media/document uploads)
+- Resend API key (used through `EMAIL_PASS` in backend env)
+- Redis (optional but recommended for cache-enabled endpoints)
 
-### Backend Setup
+### 1) Backend setup
 
-1. Navigate to the backend directory:
+1. Open backend folder:
 
    ```bash
    cd backend
@@ -24,39 +27,41 @@ A full-stack hostel management web application built for efficient administratio
    npm install
    ```
 
-3. Create a `.env` file based on `.env.sample`:
+3. Create `.env` from `.env.sample`:
 
    ```env
    JWT_SECRET=your-secret-key-here
    MONGO_URI=mongodb://localhost:27017/hostelia
    PORT=3000
+
    FRONTEND_URL=http://localhost:5173
+   FRONTEND_URLS=http://localhost:5173,http://localhost:5174
    NODE_ENV=development
 
-   # Email Configuration (for OTP)
+   REDIS_URL=redis://localhost:6379
+
    EMAIL_HOST=smtp.gmail.com
    EMAIL_PORT=587
    EMAIL_SECURE=false
-   EMAIL_USER=your-email@gmail.com
-   EMAIL_PASS=your-app-password
+   EMAIL_USER=your-verified-sender@domain.com
+   EMAIL_PASS=your-resend-api-key
 
-   # Cloudinary (for file uploads)
    CLOUDINARY_CLOUD_NAME=your-cloud-name
    CLOUDINARY_API_KEY=your-api-key
    CLOUDINARY_API_SECRET=your-api-secret
    ```
 
-4. Start the development server:
+4. Run backend:
 
    ```bash
    npm run dev
    ```
 
-   The backend will run on `http://localhost:3000`
+   Backend runs at `http://localhost:3000`.
 
-### Frontend Setup
+### 2) Frontend setup
 
-1. Navigate to the frontend directory:
+1. Open frontend folder:
 
    ```bash
    cd frontend
@@ -68,112 +73,140 @@ A full-stack hostel management web application built for efficient administratio
    npm install
    ```
 
-3. Start the development server:
+3. Run frontend:
 
    ```bash
    npm run dev
    ```
 
-   The frontend will run on `http://localhost:5173`
+   Frontend runs at `http://localhost:5173`.
 
-### Running Both Simultaneously
+### 3) Run both quickly
 
-Open two terminals and run the backend and frontend servers in parallel, or use a process manager.
+Use two terminals:
 
-### API Documentation (Swagger)
+- Terminal 1: `cd backend && npm run dev`
+- Terminal 2: `cd frontend && npm run dev`
+
+### 4) Docker (optional)
+
+`docker-compose.yaml` includes `backend`, `frontend`, `redis`, and `rabbitmq` services.
+
+```bash
+docker compose up --build
+```
+
+### 5) Testing and reports
+
+From `backend/`:
+
+- `npm test` - run tests
+- `npm run test:watch` - watch mode
+- `npm run test:coverage` - coverage report (includes HTML report output)
+
+### API documentation
 
 - Swagger UI: `http://localhost:3000/api-docs`
 - OpenAPI JSON: `http://localhost:3000/api/docs.json`
 
-Swagger docs are always enabled in this backend (no extra env toggle required).
-
+Swagger is enabled by default.
 
 ## Tech Stack
 
 ### Frontend
 
-- **React 19** with TypeScript
-- **Vite** - Build tool
-- **Redux Toolkit** - State management
-- **React Router v7** - Routing
-- **Tailwind CSS v4** - Styling
-- **Shadcn/ui** (Radix UI) - Component library
-- **React Hook Form + Zod** - Form handling & validation
-- **Recharts** - Dashboard analytics charts
-- **Axios** - API client
+- React 19 + TypeScript
+- Vite
+- Redux Toolkit
+- React Router v7
+- Tailwind CSS v4 + shadcn/ui
+- React Hook Form + Zod
+- Axios
+- Recharts
 
 ### Backend
 
-- **Node.js** with Express 5
-- **MongoDB** with Mongoose ODM
-- **JWT** - Authentication
-- **Bcrypt** - Password hashing
-- **Nodemailer/Resend** - Email services (OTP)
-- **Cloudinary** - File/image uploads
-- **Zod** - Request validation
-- **Winston** - Logging
+- Node.js + Express 5
+- MongoDB + Mongoose
+- JWT auth + role-based access control
+- Cloudinary uploads (images/docs)
+- Resend email integration
+- Redis cache layer (`ioredis`) with graceful fallback
+- GraphQL (`/api/graphql`) for health/me
+- Swagger/OpenAPI
+- Winston logging
 
 ## Features
 
-- **User Authentication** - JWT-based login/signup with OTP verification
-- **Role-based Access** - Student, Warden, and Admin roles
-- **Dashboard & Analytics** - Visual statistics and insights
-- **User Management** - CRUD operations for students
-- **Warden Management** - Warden assignment and management
-- **Complaints System** - Submit, track, and resolve complaints
-- **Mess Management** - Weekly menu display and editing
-- **Feedback System** - Student feedback collection and analytics
-- **Transit Management** - Track student check-in/check-out
-- **Announcements** - Post and view hostel announcements with attachments
-- **Fee Management** - Fee submission tracking with document uploads
-- **Email Notifications** - OTP and real-time notification system
+- Multi-role auth (student, warden, collegeAdmin, manager)
+- College registration and manager approval workflows
+- Hostel and warden management
+- Complaint lifecycle (create, comment, status update, verification)
+- Complaint evidence uploads with validation and error handling
+- Fee submission/review workflows (hostel + mess)
+- Mess menu and feedback management
+- Transit in/out tracking
+- Announcements with attachment support
+- Real-time notifications via SSE
+- Redis-backed caching for selected list endpoints
+- Search/index-aware query paths and pagination-friendly data access
 
 ## Project Structure
 
-```
+```text
 Hostelia_FFSD_Project/
 ├── backend/
-│   ├── config/          # Database configuration
-│   ├── controllers/     # Route handlers
-│   ├── middleware/      # Auth, logging, error handling
-│   ├── models/          # Mongoose schemas
-│   ├── routes/          # API route definitions
-│   ├── script/          # Utility scripts (seeding, admin setup)
-│   ├── utils/           # Email client, notification service
-│   └── index.js         # Server entry point
-│
+│   ├── api-docs/
+│   ├── config/
+│   ├── controllers/
+│   ├── graphql/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── tests/
+│   ├── utils/
+│   └── index.js
 ├── frontend/
 │   ├── src/
-│   │   ├── components/  # Reusable UI components
-│   │   ├── features/    # Redux slices
-│   │   ├── hooks.ts     # Custom React hooks
-│   │   ├── lib/         # API client, utilities
-│   │   ├── pages/       # Page components
-│   │   ├── routes/      # Route definitions & guards
-│   │   ├── store.ts     # Redux store configuration
-│   │   ├── types/       # TypeScript type definitions
-│   │   └── utils/       # Helper functions
+│   │   ├── components/   # Reusable UI and domain components
+│   │   ├── features/     # Redux slices/state modules
+│   │   ├── hooks/        # Custom hooks
+│   │   ├── lib/          # API clients and shared utilities
+│   │   ├── pages/        # Route-level pages
+│   │   ├── routes/       # Router config + guards
+│   │   ├── store.ts      # Redux store setup
+│   │   ├── hooks.ts      # Typed Redux hooks
+│   │   └── App.tsx
 │   └── package.json
-│
-└── .github/workflows/   # CI/CD pipelines
+├── docker-compose.yaml
+└── README.md
 ```
 
 ## API Endpoints
 
-| Module         | Base Route            |
-| -------------- | --------------------- |
-| Authentication | `/api/auth`           |
-| Users          | `/api/user`           |
-| Wardens        | `/api/warden`         |
-| Complaints     | `/api/problem`        |
-| Mess           | `/api/mess`           |
-| Transit        | `/api/transit`        |
-| Announcements  | `/api/announcement`   |
-| Fees           | `/api/fee-submission` |
-| Contact        | `/api/contact`        |
-| Notifications  | `/api/notification`   |
+| Module         | Base Route           |
+| -------------- | -------------------- |
+| Authentication | `/api/auth`          |
+| Users          | `/api/user`          |
+| Wardens        | `/api/warden`        |
+| Complaints     | `/api/problem`       |
+| Mess           | `/api/mess`          |
+| Transit        | `/api/transit`       |
+| Announcements  | `/api/announcement`  |
+| Fees           | `/api/fee`           |
+| Contact        | `/api/contact`       |
+| Notifications  | `/api/notifications` |
+| Colleges       | `/api/college`       |
+| Hostels        | `/api/hostel`        |
+| Manager        | `/api/manager`       |
+| GraphQL        | `/api/graphql`       |
 
----
+## Documentation
+
+- Live API docs: `/api-docs` and `/api/docs.json`
+- Source OpenAPI spec: `backend/api-docs/openapi.js`
+- Swagger setup: `backend/config/swagger.js`
+- If local markdown docs are generated in your environment, keep them under `docs/` for project reports/presentations.
 
 ## Group 52 - Team Contributions
 
@@ -183,6 +216,8 @@ Hostelia_FFSD_Project/
 
 - Dashboard & Analytics
 - Authorization System
+- CI/CD pipeline
+- Dockerization of application
 
 ### Saurav Singh
 
@@ -191,6 +226,8 @@ Hostelia_FFSD_Project/
 - User Management
 - Warden Management
 - Complaints Module
+- Redis cache integration touchpoints for mess/transit-heavy flows
+- Testing of controller endpoints
 
 ### Ashutosh Sinha
 
@@ -199,6 +236,8 @@ Hostelia_FFSD_Project/
 - Mess Management
 - Feedback System
 - Transit Module
+- DB optimization improvements
+- Testing of view endpoints
 
 ### Abhiraj Singh Chauhan
 
@@ -208,6 +247,7 @@ Hostelia_FFSD_Project/
 - Fee Management
 - Project Setup & Backend Architecture
 - Email & Real-time Notification System
+- Deployment readiness
 
 ### C. Venkata Sivaji
 
@@ -216,6 +256,8 @@ Hostelia_FFSD_Project/
 - Contact Page
 - About Page
 - Homepage
+- Testing of model endpoints
+- GraphQL endpoints
 
 ---
 

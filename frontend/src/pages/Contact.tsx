@@ -9,6 +9,11 @@ import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
 import axios from "axios";
 import { apiClient } from "@/lib/api-client";
 
+const CONTACT_EMAIL = "hostelia@hostelia.abhiraj0x.me";
+const CONTACT_PHONE_DISPLAY = "+91 73555 10488";
+const CONTACT_PHONE_LINK = "tel:+917355510488";
+const OFFICE_ADDRESS = "BH3 Hostel IIIT Sri City Andhra Pradesh";
+
 function Contact() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -181,30 +186,30 @@ function Contact() {
                     </div>
                     <div>
                       <p className="font-medium">Hostelia Administrative Office</p>
-                      <p className="text-sm text-muted-foreground">123 Campus Road, Building A, City</p>
+                      <p className="text-sm text-muted-foreground">{OFFICE_ADDRESS}</p>
                     </div>
                   </div>
 
-                  <a href="mailto:support@hostelia.example" className="block hover:bg-muted/5 rounded-md">
+                  <a href={`mailto:${CONTACT_EMAIL}`} className="block hover:bg-muted/5 rounded-md">
                     <div className="grid grid-cols-[44px_1fr] items-center gap-3 p-2">
                       <div className="h-11 w-11 flex items-center justify-center rounded-lg bg-muted shrink-0">
                         <Mail className="size-5 text-foreground" />
                       </div>
                       <div>
                         <p className="font-medium">Email</p>
-                        <p className="text-sm text-muted-foreground">support@hostelia.example</p>
+                        <p className="text-sm text-muted-foreground">{CONTACT_EMAIL}</p>
                       </div>
                     </div>
                   </a>
 
-                  <a href="tel:+15551234567" className="block hover:bg-muted/5 rounded-md">
+                  <a href={CONTACT_PHONE_LINK} className="block hover:bg-muted/5 rounded-md">
                     <div className="grid grid-cols-[44px_1fr] items-center gap-3 p-2">
                       <div className="h-11 w-11 flex items-center justify-center rounded-lg bg-muted shrink-0">
                         <Phone className="size-5 text-foreground" />
                       </div>
                       <div>
                         <p className="font-medium">Phone</p>
-                        <p className="text-sm text-muted-foreground">+1 (555) 123-4567</p>
+                        <p className="text-sm text-muted-foreground">{CONTACT_PHONE_DISPLAY}</p>
                       </div>
                     </div>
                   </a>

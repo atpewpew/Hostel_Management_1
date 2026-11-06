@@ -6,6 +6,7 @@ import Menu from "../models/menu.model.js";
 import { authorizeRoles } from '../middleware/roles.js';
 import { logger } from '../middleware/logger.js';
 import { notifyUsers } from '../utils/notificationService.js';
+import { invalidateCacheByPrefix } from "../middleware/cache.middleware.js";
 
 const days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ];
 const mealTypes = [ "Breakfast", "Lunch", "Snacks", "Dinner" ];
@@ -180,6 +181,7 @@ export const updateMenu = async (req, res) => {
             modifiedCount: bulkResult.modifiedCount,
             upsertedCount: bulkResult.upsertedCount,
         });
+        await invalidateCacheByPrefix(`cache:mess:menu:${req.user.collegeId.toString()}:`);
 
         // Send notification to all students about the batch update
         try {
@@ -370,6 +372,7 @@ export const createMess = async (req, res) => {
             capacity: capacity || 0,
             collegeId,
         });
+        await invalidateCacheByPrefix(`cache:mess:list:${collegeId.toString()}:`);
 
         return res.status(201).json({
             success: true,
@@ -387,6 +390,49 @@ export const createMess = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Failed to create mess",
+        });
+    }
+};
+
+// Delete a mess (collegeAdmin only)
+export const deleteMess = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const collegeId = req.user.collegeId;
+
+        const mess = await Mess.findOne({ _id: id, collegeId });
+        if (!mess) {
+            return res.status(404).json({
+                success: false,
+                message: "Mess not found in your college",
+            });
+        }
+
+        // Unset messId/messName for any users assigned to this mess
+        await User.updateMany(
+            { messId: mess._id, collegeId },
+            { $unset: { messId: "", messName: "" } }
+        );
+
+        // Remove related menus and feedback
+        await Promise.all([
+            Menu.deleteMany({ messId: mess._id, collegeId }),
+            Feedback.deleteMany({ messId: mess._id, collegeId }),
+        ]);
+
+        await Mess.findByIdAndDelete(mess._id);
+
+        logger.info("Mess deleted", { messId: id, deletedBy: req.user._id });
+
+        return res.status(200).json({
+            success: true,
+            message: "Mess deleted successfully",
+        });
+    } catch (error) {
+        logger.error("Failed to delete mess:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to delete mess",
         });
     }
 };

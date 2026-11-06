@@ -2,6 +2,7 @@ import { z } from 'zod';
 import Hostel from '../models/hostel.model.js';
 import User from '../models/user.model.js';
 import { logger } from '../middleware/logger.js';
+import { invalidateCacheByPrefix } from '../middleware/cache.middleware.js';
 
 const createHostelSchema = z.object({
     name: z.string().min(1, "Name is required").trim(),
@@ -42,6 +43,7 @@ export async function createHostel(req, res) {
             collegeId: collegeId.toString(),
             adminId: adminId.toString(),
         });
+        await invalidateCacheByPrefix(`cache:hostel:list:${collegeId.toString()}:`);
 
         return res.status(201).json({
             success: true,

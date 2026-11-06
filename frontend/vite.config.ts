@@ -10,5 +10,12 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src")
     }
+  },
+  server: {
+    host: true,         // Keeps the network exposed for Docker
+    port: 5173,
+    watch: {
+      usePolling: true  // <-- THIS is the magic line that fixes hot reloading on Windows
+    }
   }
 });

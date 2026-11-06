@@ -95,5 +95,6 @@ const problemSchema = new mongoose.Schema(
 );
 
 problemSchema.index({ collegeId: 1, hostelId: 1, status: 1, createdAt: -1 });
+problemSchema.index({ problemTitle: "text", problemDescription: "text" });
 
 export default mongoose.model("Problem", problemSchema);

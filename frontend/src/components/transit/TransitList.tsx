@@ -80,10 +80,18 @@ export function TransitList({
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  // Get unique hostels from entries
+  // Build unique hostel options using readable hostel names.
   const uniqueHostels = Array.from(
-    new Set(entries.map((entry) => entry.studentId.hostelId))
-  ).sort();
+    new Map(
+      entries.map((entry) => [
+        entry.studentId.hostelId,
+        {
+          value: entry.studentId.hostelId,
+          label: entry.studentId.hostelName ?? entry.studentId.hostelId,
+        },
+      ])
+    ).values()
+  ).sort((a, b) => a.label.localeCompare(b.label));
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -103,6 +111,9 @@ export function TransitList({
     const matchesSearch =
       entry.studentId.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.studentId.rollNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (entry.studentId.hostelName ?? "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       entry.studentId.hostelId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.purpose.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -237,8 +248,8 @@ export function TransitList({
               <SelectContent>
                 <SelectItem value="ALL">All Hostels</SelectItem>
                 {uniqueHostels.map((hostel) => (
-                  <SelectItem key={hostel} value={hostel}>
-                    {hostel}
+                  <SelectItem key={hostel.value} value={hostel.value}>
+                    {hostel.label}
                   </SelectItem>
                 ))}
               </SelectContent>

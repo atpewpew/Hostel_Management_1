@@ -1,5 +1,6 @@
 docs/
 rules/
+.claude
 .env
 .env.*
 node_modules/

@@ -17,6 +17,9 @@ import {
 import { useAppDispatch, useAppSelector } from "@/hooks";
 import apiClient from "@/lib/api-client";
 
+const COMPLAINT_IMAGE_MAX_SIZE_BYTES = 10 * 1024 * 1024;
+const COMPLAINT_IMAGE_ALLOWED_TYPES = ["image/jpeg", "image/png"];
+
 const createComplaintSchema = z.object({
   problemTitle: z
     .string()
@@ -62,6 +65,20 @@ const createComplaintSchema = z.object({
     .refine(
       (value) => value instanceof FileList && value.length > 0,
       "Attach an image to highlight the issue"
+    )
+    .refine(
+      (value) =>
+        value instanceof FileList &&
+        value.length > 0 &&
+        COMPLAINT_IMAGE_ALLOWED_TYPES.includes(value.item(0)?.type ?? ""),
+      "Only JPG and PNG images are allowed"
+    )
+    .refine(
+      (value) =>
+        value instanceof FileList &&
+        value.length > 0 &&
+        (value.item(0)?.size ?? 0) <= COMPLAINT_IMAGE_MAX_SIZE_BYTES,
+      "Image size must be 10MB or smaller"
     ),
 });
 
@@ -183,6 +200,23 @@ function ComplaintCreatePage() {
   const handleFilePreview = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.item(0);
     if (file) {
+      if (!COMPLAINT_IMAGE_ALLOWED_TYPES.includes(file.type)) {
+        form.setError("problemImage", {
+          message: "Only JPG and PNG images are allowed",
+        });
+        setPreview(null);
+        toast.error("Only JPG and PNG images are allowed");
+        return;
+      }
+      if (file.size > COMPLAINT_IMAGE_MAX_SIZE_BYTES) {
+        form.setError("problemImage", {
+          message: "Image size must be 10MB or smaller",
+        });
+        setPreview(null);
+        toast.error("Image is too large. Please upload a file up to 10MB.");
+        return;
+      }
+      form.clearErrors("problemImage");
       const reader = new FileReader();
       reader.onload = () =>
         setPreview(typeof reader.result === "string" ? reader.result : null);
@@ -200,6 +234,20 @@ function ComplaintCreatePage() {
         message: "Attach an image to highlight the issue",
       });
       toast.error("Please attach an image to highlight the issue");
+      return;
+    }
+    if (!COMPLAINT_IMAGE_ALLOWED_TYPES.includes(file.type)) {
+      form.setError("problemImage", {
+        message: "Only JPG and PNG images are allowed",
+      });
+      toast.error("Only JPG and PNG images are allowed");
+      return;
+    }
+    if (file.size > COMPLAINT_IMAGE_MAX_SIZE_BYTES) {
+      form.setError("problemImage", {
+        message: "Image size must be 10MB or smaller",
+      });
+      toast.error("Image is too large. Please upload a file up to 10MB.");
       return;
     }
 

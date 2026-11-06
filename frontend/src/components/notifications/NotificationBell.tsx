@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { apiClient } from "@/lib/api-client";
+import { API_BASE_URL, apiClient } from "@/lib/api-client";
 import { Bell } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NotificationDropdown } from "./NotificationDropdown";
@@ -67,11 +67,7 @@ export function NotificationBell() {
 
   // Establish SSE connection
   useEffect(() => {
-    const baseURL =
-      import.meta.env.VITE_API_BASE_URL ??
-      (typeof window !== "undefined" && window.location.hostname === "localhost" ? "http://localhost:3000/api" : "/api");
-
-    const eventSource = new EventSource(`${baseURL}/notifications/stream`, {
+    const eventSource = new EventSource(`${API_BASE_URL}/notifications/stream`, {
       withCredentials: true
     });
 

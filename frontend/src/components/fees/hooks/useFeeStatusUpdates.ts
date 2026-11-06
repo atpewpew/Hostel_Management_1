@@ -35,11 +35,12 @@ export function useFeeStatusUpdates() {
       const result = await dispatch(updateFeeStatus(updateData));
 
       if (updateFeeStatus.fulfilled.match(result)) {
-        toast.success(
-          `${
-            feeType === "hostel" ? "Hostel" : "Mess"
-          } fee ${newStatus} successfully`
-        );
+        const feeLabel = feeType === "hostel" ? "Hostel" : "Mess";
+        if (newStatus === "rejected") {
+          toast.error(`${feeLabel} fee rejected`);
+        } else {
+          toast.success(`${feeLabel} fee approved successfully`);
+        }
       } else {
         const errorMessage = result.payload as string;
         if (

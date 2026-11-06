@@ -329,6 +329,7 @@ export function buildOpenApiSpec(serverUrl) {
           responses: {
             200: { description: "Login successful, jwt cookie set" },
             400: { description: "Bad credentials or validation error" },
+            403: { description: "College pending or rejected" },
             500: { $ref: "#/components/responses/ServerError" },
           },
         },
@@ -355,7 +356,7 @@ export function buildOpenApiSpec(serverUrl) {
           },
           responses: {
             200: { description: "Manager authenticated" },
-            401: { $ref: "#/components/responses/Unauthorized" },
+            400: { description: "Invalid credentials or validation error" },
             500: { $ref: "#/components/responses/ServerError" },
           },
         },
@@ -374,16 +375,35 @@ export function buildOpenApiSpec(serverUrl) {
       "/api/user/bulk-upload": {
         post: {
           tags: ["Users"],
-          summary: "Bulk upload students CSV",
+          summary: "Bulk create or upsert students",
           security: cookieAuth,
           requestBody: {
             required: true,
             content: {
-              "multipart/form-data": {
+              "application/json": {
                 schema: {
                   type: "object",
+                  required: ["students"],
                   properties: {
-                    file: { type: "string", format: "binary" },
+                    mode: { type: "string", enum: ["create", "upsert"], default: "create" },
+                    students: {
+                      type: "array",
+                      minItems: 1,
+                      maxItems: 200,
+                      items: {
+                        type: "object",
+                        required: ["name", "rollNo", "email", "hostel", "roomNo", "mess", "password"],
+                        properties: {
+                          name: { type: "string" },
+                          rollNo: { type: "string", pattern: "^[0-9]{3}$" },
+                          email: { type: "string", format: "email" },
+                          hostel: { type: "string" },
+                          roomNo: { type: "string" },
+                          mess: { type: "string" },
+                          password: { type: "string", minLength: 6 },
+                        },
+                      },
+                    },
                   },
                 },
               },
@@ -391,6 +411,7 @@ export function buildOpenApiSpec(serverUrl) {
           },
           responses: {
             200: { description: "Bulk upload processed" },
+            400: { description: "Validation failed" },
             403: { $ref: "#/components/responses/Forbidden" },
           },
         },
@@ -446,7 +467,18 @@ export function buildOpenApiSpec(serverUrl) {
               "application/json": {
                 schema: {
                   type: "object",
-                  additionalProperties: true,
+                  properties: {
+                    name: { type: "string", minLength: 1 },
+                    rollNo: { type: "string", minLength: 1 },
+                    email: { type: "string", format: "email" },
+                    hostelId: { $ref: "#/components/schemas/ObjectIdParam" },
+                    messId: {
+                      type: "string",
+                      pattern: "^[0-9a-fA-F]{24}$",
+                      nullable: true,
+                    },
+                    roomNo: { type: "string", minLength: 1 },
+                  },
                 },
               },
             },
@@ -541,7 +573,22 @@ export function buildOpenApiSpec(serverUrl) {
               "application/json": {
                 schema: {
                   type: "object",
-                  additionalProperties: true,
+                  required: ["messId", "updates"],
+                  properties: {
+                    messId: { $ref: "#/components/schemas/ObjectIdParam" },
+                    updates: {
+                      type: "object",
+                      description: "Day-based menu updates. Keys should be day names (e.g., Monday).",
+                      additionalProperties: {
+                        type: "object",
+                        description: "Per-day meal updates where keys are Breakfast/Lunch/Snacks/Dinner.",
+                        additionalProperties: {
+                          type: "array",
+                          items: { type: "string" },
+                        },
+                      },
+                    },
+                  },
                 },
               },
             },
@@ -706,7 +753,12 @@ export function buildOpenApiSpec(serverUrl) {
                 schema: {
                   type: "object",
                   required: ["status"],
-                  properties: { status: { type: "string" } },
+                  properties: {
+                    status: {
+                      type: "string",
+                      enum: ["Pending", "Resolved", "Rejected", "ToBeConfirmed"],
+                    },
+                  },
                 },
               },
             },
@@ -728,11 +780,12 @@ export function buildOpenApiSpec(serverUrl) {
             },
           ],
           requestBody: {
-            required: false,
+            required: true,
             content: {
               "application/json": {
                 schema: {
                   type: "object",
+                  required: ["studentStatus"],
                   properties: {
                     studentStatus: { type: "string", enum: ["NotResolved", "Resolved", "Rejected"] },
                   },
@@ -898,6 +951,10 @@ export function buildOpenApiSpec(serverUrl) {
                       enum: ["documentNotSubmitted", "pending", "approved", "rejected"],
                     },
                   },
+                  anyOf: [
+                    { required: ["hostelFeeStatus"] },
+                    { required: ["messFeeStatus"] },
+                  ],
                 },
               },
             },
@@ -935,13 +992,20 @@ export function buildOpenApiSpec(serverUrl) {
           summary: "Send bulk fee reminders",
           security: cookieAuth,
           requestBody: {
-            required: false,
+            required: true,
             content: {
               "application/json": {
                 schema: {
                   type: "object",
+                  required: ["studentIds", "emailType"],
                   properties: {
+                    studentIds: {
+                      type: "array",
+                      minItems: 1,
+                      items: { $ref: "#/components/schemas/ObjectIdParam" },
+                    },
                     emailType: { type: "string", enum: ["hostelFee", "messFee", "both"] },
+                    notes: { type: "string" },
                   },
                 },
               },
@@ -1011,7 +1075,7 @@ export function buildOpenApiSpec(serverUrl) {
               },
             },
           },
-          responses: { 200: { description: "Warden appointed" } },
+          responses: { 201: { description: "Warden appointed" } },
         },
       },
       "/api/notifications/stream": {
@@ -1107,10 +1171,10 @@ export function buildOpenApiSpec(serverUrl) {
                   type: "object",
                   required: ["name", "email", "message"],
                   properties: {
-                    name: { type: "string" },
+                    name: { type: "string", minLength: 2, maxLength: 100 },
                     email: { type: "string", format: "email" },
-                    subject: { type: "string" },
-                    message: { type: "string" },
+                    subject: { type: "string", minLength: 3, maxLength: 200 },
+                    message: { type: "string", minLength: 1, maxLength: 200 },
                   },
                 },
               },

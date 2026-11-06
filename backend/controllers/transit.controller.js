@@ -4,10 +4,32 @@ import User from '../models/user.model.js';
 import { logger } from '../middleware/logger.js';
 
 const createTransitSchema = z.object({
-    purpose: z.string().min(3).max(500),
+    purpose: z.string().trim().max(500).optional().default(''),
     transitStatus: z.enum([ 'ENTRY', 'EXIT' ]),
     date: z.coerce.date(),
     time: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/, 'Time must be in HH:MM:SS format').optional(),
+}).superRefine((data, ctx) => {
+    if (data.transitStatus !== 'EXIT') {
+        return;
+    }
+
+    const purpose = data.purpose?.trim() || '';
+    if (purpose.length < 3) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [ 'purpose' ],
+            message: 'Purpose must be at least 3 characters for EXIT',
+        });
+        return;
+    }
+
+    if (!/\p{L}/u.test(purpose)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [ 'purpose' ],
+            message: 'Purpose must contain alphabetic characters',
+        });
+    }
 });
 
 export async function createTransitEntry(req, res) {
@@ -26,6 +48,15 @@ export async function createTransitEntry(req, res) {
         const lastTransit = await Transit.findOne({ studentId: userId, collegeId: req.user.collegeId }).sort({ createdAt: -1 });
         const entryDate = parsed.data.date;
         const entryTime = parsed.data.time || new Date().toTimeString().split(' ')[ 0 ];
+        const normalizedPurpose = parsed.data.purpose?.trim() || '';
+
+        if (!lastTransit && parsed.data.transitStatus === 'ENTRY') {
+            return res.status(400).json({
+                success: false,
+                message: 'First transit record must be EXIT before ENTRY',
+            });
+        }
+
         if (lastTransit) {
             const expectedStatus = lastTransit.transitStatus === 'ENTRY' ? 'EXIT' : 'ENTRY';
             if (parsed.data.transitStatus !== expectedStatus) {
@@ -48,7 +79,9 @@ export async function createTransitEntry(req, res) {
         const transitData = {
             studentId: userId,
             collegeId: req.user.collegeId,
-            purpose: parsed.data.purpose,
+            purpose: parsed.data.transitStatus === 'EXIT'
+                ? normalizedPurpose
+                : (lastTransit?.purpose || 'Returned to hostel'),
             transitStatus: parsed.data.transitStatus,
             date: entryDate,
             time: entryTime,

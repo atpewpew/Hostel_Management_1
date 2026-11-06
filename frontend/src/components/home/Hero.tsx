@@ -35,38 +35,21 @@ const lifecycle = [
 const metrics = [
   {
     label: "Resolution rate",
-    value: "95%",
-    detail: "Complaints resolved efficiently",
+    value: "Tracked",
+    detail: "Every complaint keeps a full status history",
   },
   {
     label: "Active colleges",
-    value: "50+",
-    detail: "Registered across the platform",
+    value: "Growing",
+    detail: "Campus onboarding and approvals are supported",
   },
   {
     label: "Mess rating",
-    value: "4.2/5",
-    detail: "Average student satisfaction",
+    value: "Feedback-based",
+    detail: "Ratings reflect submitted student feedback",
   },
 ];
 
-const queueSnapshot = [
-  {
-    label: "Pending complaints",
-    value: "12",
-    tone: "bg-primary/15 text-primary",
-  },
-  {
-    label: "In progress",
-    value: "08",
-    tone: "bg-amber-500/15 text-amber-700 dark:text-amber-200",
-  },
-  {
-    label: "Awaiting confirmation",
-    value: "05",
-    tone: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-200",
-  },
-];
 
 function Hero() {
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
@@ -151,20 +134,6 @@ function Hero() {
                   <Workflow className="h-4 w-4" />
                   Live dashboard
                 </Badge>
-                <span className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Refreshes every 60s
-                </span>
-              </div>
-              <div className="mt-6 grid gap-3">
-                {queueSnapshot.map((item) => (
-                  <div
-                    key={item.label}
-                    className={`flex items-center justify-between rounded-2xl px-4 py-3 text-sm font-medium ${item.tone}`}
-                  >
-                    <span>{item.label}</span>
-                    <span className="text-2xl font-semibold">{item.value}</span>
-                  </div>
-                ))}
               </div>
               <CardContent className="mt-6 space-y-4 rounded-2xl border border-dashed border-border/70 bg-background/70 p-5">
                 <p className="text-xs uppercase tracking-widest text-muted-foreground">

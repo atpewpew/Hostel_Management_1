@@ -4,6 +4,7 @@ import College from "../models/college.model.js";
 import Hostel from "../models/hostel.model.js";
 import Mess from "../models/mess.model.js";
 import { uploadBufferToCloudinary, getSecureUrl } from "../config/cloudinary.js";
+import { invalidateCacheByPrefix } from "../middleware/cache.middleware.js";
 
 const registerCollegeSchema = z.object({
     collegeName: z.string().min(1, "College name is required").trim(),
@@ -118,6 +119,7 @@ export const registerCollege = async (req, res) => {
             collegeId: newCollege._id,
             emailDomain,
         });
+        await invalidateCacheByPrefix("cache:college:list:");
 
         return res.status(201).json({
             success: true,

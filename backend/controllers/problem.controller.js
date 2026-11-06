@@ -9,6 +9,25 @@ import Problem from "../models/problem.model.js";
 import User from "../models/user.model.js";
 import { notifyUsers } from "../utils/notificationService.js";
 
+const toProblemResponse = (problemDoc) => {
+  const problem = typeof problemDoc?.toObject === "function" ? problemDoc.toObject() : problemDoc;
+  const hostelField = problem?.hostelId;
+  const hostelId =
+    hostelField && typeof hostelField === "object" && "_id" in hostelField
+      ? hostelField._id?.toString()
+      : hostelField?.toString?.() ?? null;
+  const hostelName =
+    hostelField && typeof hostelField === "object" && "name" in hostelField
+      ? hostelField.name ?? null
+      : null;
+
+  return {
+    ...problem,
+    hostelId,
+    hostelName,
+  };
+};
+
 const createProblemSchema = z.object({
   problemTitle: z
     .string()
@@ -120,10 +139,11 @@ export async function createProblem(req, res) {
       });
     }
 
+    await problem.populate("hostelId", "name");
     return res.status(201).json({
       success: true,
       message: "Problem created successfully",
-      problem,
+      problem: toProblemResponse(problem),
     });
   } catch (err) {
     logger.error("Failed to create problem", {
@@ -157,45 +177,20 @@ export async function listProblems(req, res) {
       filter.hostelId = hostelId;
     }
 
-    // If there's a search query, search across multiple fields
+    let sort = { createdAt: -1 };
+
+    // If there's a search query, use text index search with relevance ranking.
     if (query && query.trim()) {
       const searchTerm = query.trim();
-
-      // Try to find users by roll number or name
-      const User = (await import("../models/user.model.js")).default;
-      const userFilter = {
-        collegeId: req.user.collegeId,
-        $or: [
-          { rollNo: { $regex: searchTerm, $options: "i" } },
-          { name: { $regex: searchTerm, $options: "i" } },
-        ],
-      };
-
-      const matchingUsers = await User.find(userFilter).select("_id");
-      const userIds = matchingUsers.map((u) => u._id);
-
-      // Search in problems by title, description, room number, or matching student IDs
-      filter.$or = [
-        { problemTitle: { $regex: searchTerm, $options: "i" } },
-        { problemDescription: { $regex: searchTerm, $options: "i" } },
-        { roomNo: { $regex: searchTerm, $options: "i" } },
-        { category: { $regex: searchTerm, $options: "i" } },
-      ];
-
-      if (userIds.length > 0) {
-        filter.$or.push({ studentId: { $in: userIds } });
-      }
+      filter.$text = { $search: searchTerm };
+      sort = { score: { $meta: "textScore" }, createdAt: -1 };
     }
 
     const problems = await Problem.find(filter)
       .populate("hostelId", "name")
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .lean();
-    const problemsWithHostelName = problems.map((p) => ({
-      ...p,
-      hostelId: p.hostelId?._id?.toString() ?? p.hostelId?.toString(),
-      hostelName: p.hostelId?.name ?? null,
-    }));
+    const problemsWithHostelName = problems.map((p) => toProblemResponse(p));
     return res
       .status(200)
       .json({ success: true, message: "Problems fetched", problems: problemsWithHostelName });
@@ -242,9 +237,10 @@ export async function addProblemComment(req, res) {
       problemId: problem._id.toString(),
       userId: req.user._id.toString(),
     });
+    await problem.populate("hostelId", "name");
     return res
       .status(201)
-      .json({ success: true, message: "Comment added", problem });
+      .json({ success: true, message: "Comment added", problem: toProblemResponse(problem) });
   } catch (err) {
     logger.error("Failed to add comment", {
       error: err.message,
@@ -341,9 +337,10 @@ export async function updateProblemStatus(req, res) {
       });
     }
 
+    await problem.populate("hostelId", "name");
     return res
       .status(200)
-      .json({ success: true, message: "Status updated", problem });
+      .json({ success: true, message: "Status updated", problem: toProblemResponse(problem) });
   } catch (err) {
     logger.error("Failed to update status", {
       error: err.message,
@@ -405,9 +402,10 @@ export async function verifyProblemResolution(req, res) {
       studentId: req.user._id.toString(),
       studentStatus: problem.studentStatus,
     });
+    await problem.populate("hostelId", "name");
     return res
       .status(200)
-      .json({ success: true, message: "Verification updated", problem });
+      .json({ success: true, message: "Verification updated", problem: toProblemResponse(problem) });
   } catch (err) {
     logger.error("Failed to verify problem", {
       error: err.message,

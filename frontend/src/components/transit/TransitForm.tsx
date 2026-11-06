@@ -59,9 +59,35 @@ const entryExitSchema = z
     minute: z.string().min(1, "Minute is required"),
     purpose: z
       .string()
-      .min(3, "Purpose must be at least 3 characters")
       .max(200, "Purpose cannot exceed 200 characters")
-      .refine((val) => /\p{L}/u.test(val), "Purpose must contain alphabetic characters"),
+      .optional()
+      .refine(
+        (val) => !val || /\p{L}/u.test(val),
+        "Purpose must contain alphabetic characters"
+      ),
+  })
+  .superRefine((data, ctx) => {
+    if (data.transitStatus !== "EXIT") {
+      return;
+    }
+
+    const purpose = data.purpose?.trim() || "";
+    if (purpose.length < 3) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Purpose must be at least 3 characters for exit",
+        path: ["purpose"],
+      });
+      return;
+    }
+
+    if (!/\p{L}/u.test(purpose)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Purpose must contain alphabetic characters",
+        path: ["purpose"],
+      });
+    }
   })
   .refine(
     (data) => {
@@ -103,7 +129,7 @@ interface TransitEntry {
 }
 
 interface TransitFormProps {
-  onSubmit: (data: { transitStatus: string; date: Date; time: string; purpose: string }) => Promise<void>;
+  onSubmit: (data: { transitStatus: string; date: Date; time: string; purpose?: string }) => Promise<void>;
   createStatus: "idle" | "loading" | "succeeded" | "failed";
   createError: string | null;
   entries?: TransitEntry[];
@@ -120,7 +146,8 @@ export function TransitForm({ onSubmit, createStatus, createError, entries = [] 
   // Get last transit status for the current user
   const lastEntry = entries.length > 0 ? entries[0] : null;
   const lastTransitStatus = lastEntry?.transitStatus;
-  const expectedNextStatus = lastTransitStatus === "ENTRY" ? "EXIT" : "ENTRY";
+  const requiredTransitStatus: "ENTRY" | "EXIT" =
+    lastTransitStatus === "EXIT" ? "ENTRY" : "EXIT";
 
   const {
     control,
@@ -132,7 +159,7 @@ export function TransitForm({ onSubmit, createStatus, createError, entries = [] 
   } = useForm<EntryExitFormData>({
     resolver: zodResolver(entryExitSchema),
     defaultValues: {
-      transitStatus: expectedNextStatus,
+      transitStatus: requiredTransitStatus,
       date: new Date(),
       hour: currentHour,
       minute: currentMinute,
@@ -144,6 +171,12 @@ export function TransitForm({ onSubmit, createStatus, createError, entries = [] 
   const selectedDate = watch("date");
   const selectedHour = watch("hour");
   const selectedMinute = watch("minute");
+
+  useEffect(() => {
+    setValue("transitStatus", requiredTransitStatus, {
+      shouldValidate: true,
+    });
+  }, [requiredTransitStatus, setValue]);
 
   useEffect(() => {
     if (selectedDate) {
@@ -174,14 +207,14 @@ export function TransitForm({ onSubmit, createStatus, createError, entries = [] 
       const currentH = now.getHours().toString().padStart(2, "0");
       const currentM = now.getMinutes().toString().padStart(2, "0");
       reset({
-        transitStatus: "EXIT",
+        transitStatus: requiredTransitStatus,
         date: now,
         hour: currentH,
         minute: currentM,
         purpose: "",
       });
     }
-  }, [createStatus, reset]);
+  }, [createStatus, requiredTransitStatus, reset]);
 
   const getMinHour = () => {
     const selected = new Date(selectedDate);
@@ -229,11 +262,15 @@ export function TransitForm({ onSubmit, createStatus, createError, entries = [] 
 
   const handleSubmitForm = async (data: EntryExitFormData) => {
     const timeWithSeconds = `${data.hour}:${data.minute}:00`;
+    const normalizedPurpose = data.purpose?.trim();
     await onSubmit({
       transitStatus: data.transitStatus,
       date: data.date,
       time: timeWithSeconds,
-      purpose: data.purpose.trim(),
+      purpose:
+        data.transitStatus === "EXIT"
+          ? normalizedPurpose
+          : normalizedPurpose || undefined,
     });
   };
 
@@ -277,7 +314,9 @@ export function TransitForm({ onSubmit, createStatus, createError, entries = [] 
                     <SelectValue placeholder="Select entry or exit" />
                   </SelectTrigger>
                   <SelectContent>
-                    {transitTypes.map((type) => {
+                    {transitTypes
+                      .filter((type) => type.value === requiredTransitStatus)
+                      .map((type) => {
                       const Icon = type.icon;
                       return (
                         <SelectItem key={type.value} value={type.value}>
@@ -292,6 +331,9 @@ export function TransitForm({ onSubmit, createStatus, createError, entries = [] 
                 </Select>
               )}
             />
+            <p className="text-xs text-muted-foreground">
+              Sequence is enforced automatically: first EXIT, then ENTRY.
+            </p>
             {errors.transitStatus && (
               <p className="text-xs text-red-600 flex items-center gap-1">
                 <AlertCircle className="h-2 w-2" />
@@ -421,49 +463,57 @@ export function TransitForm({ onSubmit, createStatus, createError, entries = [] 
           </div>
 
           {/* Purpose */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
-              Purpose <span className="text-red-500">*</span>
-            </Label>
-            <Controller
-              name="purpose"
-              control={control}
-              render={({ field }) => {
-                const charCount = field.value?.length || 0;
-                const maxChars = 200;
-                const percentage = (charCount / maxChars) * 100;
-                const counterColor = percentage >= 90 ? 'text-destructive' 
-                  : percentage >= 75 ? 'text-yellow-600 dark:text-yellow-500'
-                  : 'text-muted-foreground';
-                
-                return (
-                  <div className="relative">
-                    <Textarea
-                      {...field}
-                      placeholder="Describe the reason for your entry/exit briefly..."
-                      className="min-h-10 max-h-20 border focus:border-primary/50 transition-colors resize-none text-xs pr-16"
-                      maxLength={maxChars}
-                    />
-                    <div className={cn(
-                      "absolute bottom-1.5 right-2 text-xs font-medium",
-                      counterColor
-                    )}>
-                      {charCount}/{maxChars}
+          {transitStatus === "EXIT" ? (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-foreground">
+                Purpose <span className="text-red-500">*</span>
+              </Label>
+              <Controller
+                name="purpose"
+                control={control}
+                render={({ field }) => {
+                  const charCount = field.value?.length || 0;
+                  const maxChars = 200;
+                  const percentage = (charCount / maxChars) * 100;
+                  const counterColor = percentage >= 90 ? 'text-destructive' 
+                    : percentage >= 75 ? 'text-yellow-600 dark:text-yellow-500'
+                    : 'text-muted-foreground';
+
+                  return (
+                    <div className="relative">
+                      <Textarea
+                        {...field}
+                        placeholder="Describe the reason for your exit briefly..."
+                        className="min-h-10 max-h-20 border focus:border-primary/50 transition-colors resize-none text-xs pr-16"
+                        maxLength={maxChars}
+                      />
+                      <div className={cn(
+                        "absolute bottom-1.5 right-2 text-xs font-medium",
+                        counterColor
+                      )}>
+                        {charCount}/{maxChars}
+                      </div>
                     </div>
-                  </div>
-                );
-              }}
-            />
-            {errors.purpose && (
-              <p className="text-xs text-red-600 flex items-center gap-1">
-                <AlertCircle className="h-2 w-2" />
-                {errors.purpose.message}
+                  );
+                }}
+              />
+              {errors.purpose && (
+                <p className="text-xs text-red-600 flex items-center gap-1">
+                  <AlertCircle className="h-2 w-2" />
+                  {errors.purpose.message}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Purpose is required when creating an exit record.
               </p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Keep it brief - describe your purpose in 200 characters or less
-            </p>
-          </div>
+            </div>
+          ) : (
+            <div className="rounded border border-border/60 bg-muted/40 p-2">
+              <p className="text-xs text-muted-foreground">
+                Purpose is auto-filled from your latest exit record.
+              </p>
+            </div>
+          )}
 
           {/* Error Display */}
           {createError && (
