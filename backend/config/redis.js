@@ -1,12 +1,16 @@
 import Redis from "ioredis";
+import dotenv from "dotenv";
 import { logger } from "../middleware/logger.js";
 
-const redisUrl = process.env.REDIS_URL?.trim();
+dotenv.config();
 
 let redisClient = null;
 let connected = false;
 
-if (redisUrl) {
+function initRedisClient() {
+  const redisUrl = process.env.REDIS_URL?.trim();
+  if (!redisUrl || redisClient) return redisClient;
+
   try {
     redisClient = new Redis(redisUrl, {
       lazyConnect: true,
@@ -17,7 +21,7 @@ if (redisUrl) {
 
     redisClient.on("connect", () => {
       connected = true;
-      logger.info("Redis connected");
+      logger.info("Upstash Redis connected via TLS");
     });
 
     redisClient.on("close", () => {
@@ -32,13 +36,18 @@ if (redisUrl) {
   } catch (error) {
     logger.warn("Redis initialization failed, cache disabled", { error: error.message });
   }
+
+  return redisClient;
 }
 
 export async function ensureRedisConnection() {
+  const redisUrl = process.env.REDIS_URL?.trim();
   if (!redisUrl) {
     logger.info("Redis cache disabled (REDIS_URL not configured). Serving queries directly from MongoDB.");
     return;
   }
+
+  initRedisClient();
 
   if (!redisClient || connected) {
     return;
@@ -54,6 +63,9 @@ export async function ensureRedisConnection() {
 }
 
 export function getRedisClient() {
+  if (!redisClient) {
+    initRedisClient();
+  }
   return redisClient;
 }
 

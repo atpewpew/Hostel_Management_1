@@ -9,5 +9,8 @@
     "start": "node start-all.js",
     "backend": "npm --prefix backend run dev",
     "frontend": "npm --prefix frontend run dev"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.41.0"
   }
 }
