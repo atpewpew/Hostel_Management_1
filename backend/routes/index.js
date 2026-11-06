@@ -12,6 +12,7 @@ import contactRouter from "./contact.routes.js";
 import collegeRouter from "./college.routes.js";
 import hostelRouter from "./hostel.routes.js";
 import managerRouter from "./manager.routes.js";
+import lostFoundRouter from "./lostFound.routes.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = Router();
@@ -30,6 +31,7 @@ router.use("/contact", contactRouter);
 router.use("/college", collegeRouter);
 router.use("/hostel", authMiddleware, hostelRouter);
 router.use("/manager", authMiddleware, managerRouter);
+router.use("/lost-found", authMiddleware, lostFoundRouter);
 
 export default router;
 

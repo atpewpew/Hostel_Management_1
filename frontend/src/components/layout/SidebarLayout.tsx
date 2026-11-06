@@ -12,6 +12,7 @@ import {
   Mail,
   Menu,
   MessageCircle,
+  PackageSearch,
   SquarePen,
   UserCog,
 } from "lucide-react";
@@ -58,6 +59,12 @@ const navigation: NavigationItem[] = [
     requireAuth: true,
   },
   { label: "Mess", to: "/mess", icon: SquarePen, requireAuth: true },
+  {
+    label: "Lost & Found",
+    to: "/lost-found",
+    icon: PackageSearch,
+    requireAuth: true,
+  },
   {
     label: "Announcements",
     to: "/announcements",

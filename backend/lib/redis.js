@@ -10,3 +10,4 @@ export const redis = new Redis({
 });
 
 export default redis;
+

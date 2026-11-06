@@ -85,6 +85,12 @@ export const feeUpload = multer({
   fileFilter: feeFileFilter, // Allow images (jpeg, jpg, png) and PDF
 });
 
+export const lostFoundUpload = multer({
+  storage: memoryStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: imageFilter,
+});
+
 // Helper: convert Buffer to Readable stream
 function bufferToStream(buffer) {
   const readable = new Readable();
@@ -175,6 +181,7 @@ export default {
   problemUpload,
   announcementUpload,
   feeUpload,
+  lostFoundUpload,
   uploadBufferToCloudinary,
   getSecureUrl,
   cloudinaryClient: cloudinary.v2,

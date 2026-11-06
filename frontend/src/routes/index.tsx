@@ -14,6 +14,7 @@ import ManagerColleges from "@/pages/manager/ManagerColleges";
 import ManagerDashboard from "@/pages/manager/ManagerDashboard";
 import ManagerLogin from "@/pages/manager/ManagerLogin";
 import ManagerPending from "@/pages/manager/ManagerPending";
+import LostFoundPage from "@/pages/LostFoundPage";
 import MessPage from "@/pages/MessPage";
 import Signup from "@/pages/Signup";
 import StudentDetailPage from "@/pages/StudentDetailPage";
@@ -94,6 +95,14 @@ export function AppRoutes() {
         }
       />
       <Route path="/mess" element={<MessPage />} />
+      <Route
+        path="/lost-found"
+        element={
+          <RequireAuth>
+            <LostFoundPage />
+          </RequireAuth>
+        }
+      />
       <Route path="/announcements" element={<AnnouncementsPage />} />
       <Route path="/announcements/:id" element={<AnnouncementDetailPage />} />
       <Route path="/transit" element={<TransitPage />} />
