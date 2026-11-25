@@ -15,10 +15,17 @@ import { timingMiddleware } from "./middleware/timing.middleware.js";
 
 dotenv.config();
 
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const isProduction = process.env.NODE_ENV === "production";
+
 let initPromise = null;
 export async function ensureServicesReady() {
     if (!initPromise) {
-        initPromise = Promise.all([connectDB(), ensureRedisConnection()]).catch((err) => {
+        const tasks = [connectDB()];
+        if (process.env.NODE_ENV !== "test") {
+            tasks.push(ensureRedisConnection());
+        }
+        initPromise = Promise.all(tasks).catch((err) => {
             initPromise = null;
             throw err;
         });
@@ -29,33 +36,47 @@ export async function ensureServicesReady() {
 export function createApp() {
     const app = express();
 
-    const allowedOrigins = [
-        process.env.FRONTEND_SERVICE_URL,
-        process.env.FRONTEND_URL,
-        ...(process.env.FRONTEND_URLS ? process.env.FRONTEND_URLS.split(",") : []),
-        process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
-        process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null,
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:3000",
-    ]
-        .filter(Boolean)
-        .map((o) => o.trim());
+    // Trust Vercel / reverse-proxy headers (x-forwarded-proto, x-forwarded-host)
+    app.set("trust proxy", 1);
+
+    const staticAllowedOrigins = new Set(
+        [
+            process.env.FRONTEND_URL,
+            ...(process.env.FRONTEND_URLS ? process.env.FRONTEND_URLS.split(",") : []),
+            process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+            process.env.VERCEL_BRANCH_URL ? `https://${process.env.VERCEL_BRANCH_URL}` : null,
+            process.env.VERCEL_PROJECT_PRODUCTION_URL
+                ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+                : null,
+            ...(!isProduction
+                ? ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
+                : []),
+        ]
+            .filter(Boolean)
+            .map((o) => o.trim())
+    );
 
     app.use(
-        cors({
-            origin: (origin, callback) => {
-                if (!origin) return callback(null, true);
-                if (
-                    allowedOrigins.includes(origin) ||
-                    /^http:\/\/localhost:\d+$/.test(origin) ||
-                    origin.endsWith(".vercel.app")
-                ) {
-                    return callback(null, true);
-                }
-                return callback(new Error("Not allowed by CORS"));
-            },
-            credentials: true,
+        cors((req, callback) => {
+            const origin = req.header("Origin");
+            if (!origin) {
+                return callback(null, { origin: true, credentials: true });
+            }
+
+            const protocol = req.header("x-forwarded-proto") || req.protocol || "https";
+            const host = req.get("host");
+            const sameOrigin = host ? `${protocol}://${host}` : null;
+
+            const isAllowed =
+                staticAllowedOrigins.has(origin) ||
+                (sameOrigin && origin === sameOrigin) ||
+                (!isProduction && /^http:\/\/localhost:\d+$/.test(origin));
+
+            if (isAllowed) {
+                return callback(null, { origin: true, credentials: true });
+            }
+
+            return callback(new Error("Not allowed by CORS"));
         })
     );
 
@@ -63,7 +84,10 @@ export function createApp() {
     app.use(cookieParser());
     app.use(express.urlencoded({ extended: true }));
     app.use(timingMiddleware);
-    app.use("/uploads", express.static(path.resolve("public/uploads")));
+
+    if (!isServerless) {
+        app.use("/uploads", express.static(path.resolve("public/uploads")));
+    }
 
     // Ensure database & cache are connected for serverless invocations
     app.use(async (req, res, next) => {
@@ -75,15 +99,21 @@ export function createApp() {
             return res.status(500).json({
                 success: false,
                 message: "Database connection failed",
-                error: err.message,
+                error: isProduction ? undefined : err.message,
             });
         }
     });
 
-    setupSwagger(app);
+    if (!isProduction || process.env.ENABLE_SWAGGER === "true") {
+        setupSwagger(app);
+    }
 
     app.get("/", (req, res) => {
         res.send("Welcome to backend server of Hostelia");
+    });
+
+    app.get("/api/health", (req, res) => {
+        res.status(200).json({ success: true, status: "ok" });
     });
 
     app.all(
@@ -97,7 +127,7 @@ export function createApp() {
                 res: request.context?.res,
                 user: request.raw?.user ?? null,
             }),
-            graphiql: process.env.NODE_ENV !== "production",
+            graphiql: !isProduction,
         })
     );
 

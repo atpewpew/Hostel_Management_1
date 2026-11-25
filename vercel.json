@@ -4,14 +4,7 @@
     "backend": {
       "root": "backend",
       "framework": "express",
-      "bindings": [
-        {
-          "type": "service",
-          "service": "frontend",
-          "format": "url",
-          "env": "FRONTEND_SERVICE_URL"
-        }
-      ]
+      "entrypoint": "index.js"
     },
     "frontend": {
       "root": "frontend",
@@ -26,24 +19,6 @@
       }
     },
     {
-      "source": "/api-docs/(.*)",
-      "destination": {
-        "service": "backend"
-      }
-    },
-    {
-      "source": "/api-docs",
-      "destination": {
-        "service": "backend"
-      }
-    },
-    {
-      "source": "/uploads/(.*)",
-      "destination": {
-        "service": "backend"
-      }
-    },
-    {
       "source": "/(.*)",
       "destination": {
         "service": "frontend"
@@ -51,4 +26,3 @@
     }
   ]
 }
-

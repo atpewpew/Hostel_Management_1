@@ -3,14 +3,20 @@ import mongoose from 'mongoose';
 import { logger } from '../middleware/logger.js';
 import { seedDemoDataIfEmpty } from '../script/seedDemoData.js';
 
-// Resolve MongoDB Atlas SRV records smoothly on Windows
-try {
-    dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch {
-    // Ignore if not permitted in environment
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Resolve MongoDB Atlas SRV records smoothly on local Windows setups
+if (!isServerless && process.platform === 'win32') {
+    try {
+        dns.setServers(['8.8.8.8', '1.1.1.1']);
+    } catch {
+        // Ignore if not permitted in environment
+    }
 }
 
 let mongodInstance = null;
+let connectPromise = null;
 
 const maskMongoUri = (uri) => {
     return uri.replace(/:([^:@]+)@/, ':****@');
@@ -21,42 +27,64 @@ const connectDB = async () => {
         return;
     }
 
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/hostelia';
-    const isAtlas = mongoUri.includes('mongodb+srv://') || !mongoUri.includes('localhost');
-    const masked = maskMongoUri(mongoUri);
-
-    try {
-        const timeoutMs = isAtlas ? 10000 : 2500;
-        await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: timeoutMs });
-        logger.info(`Connected to MongoDB successfully at ${masked}`);
-        await seedDemoDataIfEmpty();
-    } catch (error) {
-        logger.warn(`Could not connect to configured MongoDB (${masked}): ${error.message}`);
-
-        if (isAtlas) {
-            logger.error(
-                'Note: MongoDB Atlas connection failed. Check your network, credentials, or Atlas IP Whitelist.'
-            );
-        }
-
-        logger.info('Spinning up embedded MongoDB instance for zero-setup local execution...');
-        try {
-            const { MongoMemoryServer } = await import('mongodb-memory-server');
-            mongodInstance = await MongoMemoryServer.create({
-                instance: {
-                    dbName: 'hostelia',
-                },
-            });
-            const embeddedUri = mongodInstance.getUri();
-            logger.info(`Embedded MongoDB ready at ${embeddedUri}`);
-            await mongoose.connect(embeddedUri);
-            logger.info('Connected to embedded MongoDB successfully');
-            await seedDemoDataIfEmpty();
-        } catch (embeddedErr) {
-            logger.error('Failed to start embedded MongoDB:', embeddedErr);
-            process.exit(1);
-        }
+    if (connectPromise) {
+        return connectPromise;
     }
+
+    connectPromise = (async () => {
+        const mongoUri = process.env.MONGO_URI || (!isProduction && !isServerless ? 'mongodb://localhost:27017/hostelia' : '');
+        if (!mongoUri) {
+            throw new Error('MONGO_URI environment variable is not set.');
+        }
+
+        const isAtlas = mongoUri.includes('mongodb+srv://') || !mongoUri.includes('localhost');
+        const masked = maskMongoUri(mongoUri);
+
+        try {
+            const timeoutMs = isAtlas ? 10000 : 2500;
+            await mongoose.connect(mongoUri, {
+                serverSelectionTimeoutMS: timeoutMs,
+                maxPoolSize: 10,
+            });
+            logger.info(`Connected to MongoDB successfully at ${masked}`);
+            await seedDemoDataIfEmpty();
+        } catch (error) {
+            logger.warn(`Could not connect to configured MongoDB (${masked}): ${error.message}`);
+
+            if (isAtlas) {
+                logger.error(
+                    'Note: MongoDB Atlas connection failed. Check your network, credentials, or Atlas IP Whitelist (use 0.0.0.0/0 for Vercel).'
+                );
+            }
+
+            // Never spin up an embedded memory DB or exit process in production / serverless
+            if (isServerless || isProduction || process.env.NODE_ENV === 'test') {
+                throw error;
+            }
+
+            logger.info('Spinning up embedded MongoDB instance for zero-setup local execution...');
+            try {
+                const { MongoMemoryServer } = await import('mongodb-memory-server');
+                mongodInstance = await MongoMemoryServer.create({
+                    instance: {
+                        dbName: 'hostelia',
+                    },
+                });
+                const embeddedUri = mongodInstance.getUri();
+                logger.info(`Embedded MongoDB ready at ${embeddedUri}`);
+                await mongoose.connect(embeddedUri);
+                logger.info('Connected to embedded MongoDB successfully');
+                await seedDemoDataIfEmpty();
+            } catch (embeddedErr) {
+                logger.error('Failed to start embedded MongoDB:', embeddedErr);
+                process.exit(1);
+            }
+        }
+    })().finally(() => {
+        connectPromise = null;
+    });
+
+    return connectPromise;
 };
 
 process.on('SIGINT', async () => {
