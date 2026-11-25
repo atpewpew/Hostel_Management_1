@@ -15,13 +15,32 @@ import { timingMiddleware } from "./middleware/timing.middleware.js";
 
 dotenv.config();
 
+let initPromise = null;
+export async function ensureServicesReady() {
+    if (!initPromise) {
+        initPromise = Promise.all([connectDB(), ensureRedisConnection()]).catch((err) => {
+            initPromise = null;
+            throw err;
+        });
+    }
+    return initPromise;
+}
+
 export function createApp() {
     const app = express();
 
-    const allowedOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || "http://localhost:5173,http://localhost:5174,http://localhost:3000")
-        .split(",")
-        .map((o) => o.trim())
-        .filter(Boolean);
+    const allowedOrigins = [
+        process.env.FRONTEND_SERVICE_URL,
+        process.env.FRONTEND_URL,
+        ...(process.env.FRONTEND_URLS ? process.env.FRONTEND_URLS.split(",") : []),
+        process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+        process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null,
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+    ]
+        .filter(Boolean)
+        .map((o) => o.trim());
 
     app.use(
         cors({
@@ -29,7 +48,8 @@ export function createApp() {
                 if (!origin) return callback(null, true);
                 if (
                     allowedOrigins.includes(origin) ||
-                    /^http:\/\/localhost:\d+$/.test(origin)
+                    /^http:\/\/localhost:\d+$/.test(origin) ||
+                    origin.endsWith(".vercel.app")
                 ) {
                     return callback(null, true);
                 }
@@ -38,11 +58,27 @@ export function createApp() {
             credentials: true,
         })
     );
+
     app.use(express.json());
     app.use(cookieParser());
     app.use(express.urlencoded({ extended: true }));
     app.use(timingMiddleware);
     app.use("/uploads", express.static(path.resolve("public/uploads")));
+
+    // Ensure database & cache are connected for serverless invocations
+    app.use(async (req, res, next) => {
+        try {
+            await ensureServicesReady();
+            next();
+        } catch (err) {
+            logger.error("Service connection error during request handling:", err);
+            return res.status(500).json({
+                success: false,
+                message: "Database connection failed",
+                error: err.message,
+            });
+        }
+    });
 
     setupSwagger(app);
 
@@ -94,9 +130,8 @@ export const app = createApp();
 
 export async function startServer() {
     try {
-        await connectDB();
-        logger.info("Connected to MongoDB");
-        await ensureRedisConnection();
+        await ensureServicesReady();
+        logger.info("Connected to MongoDB & Redis");
         const PORT = process.env.PORT || 3000;
         app.listen(PORT, () => {
             logger.info(`Server is running on port ${PORT}`);
@@ -107,6 +142,8 @@ export async function startServer() {
     }
 }
 
-if (process.env.NODE_ENV !== "test") {
+if (process.env.NODE_ENV !== "test" && !process.env.VERCEL) {
     startServer();
 }
+
+export default app;

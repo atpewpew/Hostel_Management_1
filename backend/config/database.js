@@ -17,6 +17,10 @@ const maskMongoUri = (uri) => {
 };
 
 const connectDB = async () => {
+    if (mongoose.connection.readyState >= 1) {
+        return;
+    }
+
     const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/hostelia';
     const isAtlas = mongoUri.includes('mongodb+srv://') || !mongoUri.includes('localhost');
     const masked = maskMongoUri(mongoUri);
